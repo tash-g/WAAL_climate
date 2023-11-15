@@ -39,30 +39,15 @@ predict_diffs <- function(dataset, group, group_val, val_name, val1, val2) {
     mean_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) /
       subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted * 100 
-    
-    lower_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.low) /
-      subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low * 100
-    
-    upper_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.high) /
-      subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high * 100
+  
   } else {
     mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[val_name]] %in% val2)$predicted) /
       subset(dataset, dataset[[val_name]] %in% val1)$predicted * 100 
     
-    lower_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.low) /
-      subset(dataset, dataset[[val_name]] %in% val1)$conf.low * 100
-    
-    upper_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.high) /
-      subset(dataset, dataset[[val_name]] %in% val1)$conf.high * 100
   }
   
-  df_pred <- cbind(mean_pred, lower_pred, upper_pred)
-  return(df_pred)
+  return(mean_pred)
 }
 
 
@@ -73,24 +58,13 @@ predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) 
     mean_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) * 100 
     
-    lower_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.low) * 100
-    
-    upper_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.high) * 100
-  } else {
+    } else {
     mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[val_name]] %in% val2)$predicted) * 100 
     
-    lower_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.low) * 100
-    
-    upper_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.high) * 100
   }
   
-  df_pred <- cbind(mean_pred, lower_pred, upper_pred)
-  return(df_pred)
+  return(mean_pred)
 }
 
 
@@ -236,7 +210,7 @@ sqrt(weighted_var)
 
 # Breeding success as a function of climate variables
 RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding + avgSAM_prebreeding +
-                          avgSOI_breeding + avgSOI_prebreeding + (1|Metalring), 
+                          avgSOI_breeding + avgSOI_prebreeding + (1|year/Metalring), 
                    data = waal_rs, family = "binomial")
 
 tab_model(RS_climate_glmer, show.stat = T)
@@ -244,16 +218,9 @@ tab_model(RS_climate_glmer, show.stat = T)
 ## Plot results
 
 # SAM : 
-RS_sam_pred <- ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding"))
-ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [-2, 2]"))
-
 RS_sam_plot <- ggplot() + 
   geom_point(data = annual_rs, aes(x = avgSAM_breeding, y = mean_rs, 
                                    size = n_birds)) +
-  geom_ribbon(data = RS_sam_pred, aes(x = x, y = predicted, ymin = conf.low, ymax = conf.high),
-              alpha = 0.5, fill = "coral") +
-  geom_line(data = RS_sam_pred, aes(x = x, y = predicted),
-            size = 1, col = "red") +
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
                                                   y = mean_rs, label = year),
                             segment.color = "darkorange",
@@ -266,16 +233,9 @@ RS_sam_plot <- ggplot() +
 
 
 # SOI : 
-RS_soi_pred <- ggpredict(RS_climate_glmer, terms = c("avgSOI_prebreeding"))
-ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [-3, 3]"))
-
 RS_soi_plot <- ggplot() +
   geom_point(data = annual_rs, aes(x = avgSOI_prebreeding, y = mean_rs, 
                                    size = n_birds)) +
-  geom_ribbon(data = RS_soi_pred, aes(x = x, ymin = conf.low, ymax = conf.high),
-              alpha = 0.5, fill = "coral") +
-  geom_line(data = RS_soi_pred, aes(x = x, y = predicted), 
-            size = 1, col = "red") +
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_prebreeding, 
                                                   y = mean_rs, label = year),
                             segment.color = "darkorange",
@@ -287,31 +247,6 @@ RS_soi_plot <- ggplot() +
   theme(legend.position = "none",
         axis.text.y = element_blank(),
         axis.title.y = element_blank())
-
-
-
-# IOD : NOT CURRENTLY USING 
-# iod_results <- plot_model(iod_lmer, type = "pred", terms = "avgIOD_breeding")
-# iod_results <- data.frame(iod_results$data)
-# 
-# p_IOD_RS <- ggplot() +
-#   geom_point(data = annual_rs, aes(x = avgIOD_breeding, y = mean_rs, 
-#                                    size = n_birds)) +
-#   geom_ribbon(data = iod_results, aes(x = x, ymin = conf.low, ymax = conf.high, 
-#                                       group = group_col),
-#               alpha = 0.5, fill = "coral") +
-#   geom_line(data = iod_results, aes(x = x, y = predicted), 
-#             size = 1, col = "red") +
-#   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgIOD_breeding, 
-#                                                   y = mean_rs, label = year),
-#                             segment.color = "darkorange",
-#                             min.segment.length = 0.1) +
-#   labs(x = "Arithmetic mean Indian Ocean Dipole (January to February)",
-#        y = "Breeding success") +
-#   theme_bw() + 
-#   theme(legend.position = "none",
-#         axis.text.y = element_blank(),
-#         axis.title.y = element_blank())
 
 
 # FIGURE 3: breeding success ~ climate =========================================
@@ -336,13 +271,6 @@ waal_rs %<>% dplyr::select(c("Metalring", "Sex", "year", "ReproCode", "Age", "AF
 
 
 # Individual level effects of climate on reproductive success ------------------
-
-# Three RS variables: 
-# 1) attempted_breeding : did an individual try to breed
-# 2) breeding_success: was an individual successful having tried to reproduce
-# 3) prevyear: previous year's reproductive attempt 
-
-# We know age is important, so need to factor this into models too
 
 # Separate males and females
 female_rs <- waal_rs %>% filter(Sex == "F" & !is.na(boldness_BLUP_mean))
@@ -385,7 +313,7 @@ f_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +
                    age_s*avgSAM_breeding_s*boldness_s + 
                    I(age_s^2)*avgSAM_breeding_s*boldness_s +
                    prevyear +
-                   (1|ring), 
+                   (1|year/ring), 
                  data =  female_rs, 
                  family = "binomial")
 
@@ -460,7 +388,7 @@ p_f_SAM <- ggplot(f_SAM_pred, aes(x = SAM, y = predicted, colour = Age,
                        group = Age, fill = Age)) + 
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
   geom_line(size = 1.1) +
-  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(A) Females") + 
+  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(a) Females") + 
   scale_colour_viridis_d() +
   ylim(c(0,1)) +
   theme_bw() +
@@ -536,7 +464,7 @@ p_m_SAM <- ggplot(m_SAM_pred, aes(x = SAM, y = predicted, colour = Age,
                                   group = Age, fill = Age)) + 
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
   geom_line(size = 1.1) +
-  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(B) Males (n.s.)") + 
+  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(b) Males (n.s.)") + 
   scale_colour_viridis_d() +
   ylim(c(0,1)) +
   theme_bw() +
@@ -556,9 +484,10 @@ f_SOI_glmm <- glmmTMB(breeding_success ~ age_s*avgSOI_prebreeding_s*boldness_s +
                    age_s*avgSOI_breeding_s*boldness_s + 
                    I(age_s^2)*avgSOI_breeding_s*boldness_s +
                    prevyear +
-                   (1|ring), 
+                   (1|year/ring), 
                  data =  female_rs, 
                  family = "binomial")
+
 summary(f_SOI_glmm)
 tab_model(f_SOI_glmm, show.stat = T)
 
@@ -577,7 +506,7 @@ p_f_SOI <- ggplot(f_SOI_pred, aes(x = SOI, y = predicted, colour = boldness,
                        group = boldness, fill = boldness)) + 
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
   geom_line(size = 1.1) +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(C) Females (n.s.)") + 
+  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(c) Females (n.s.)") + 
   scale_colour_manual(values = c("#FFC20A", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"), 
                      name = "Boldness") +
   scale_fill_manual(values = c("#FFE48F", "#FFC20A", "#A37C01"), labels = c("Shy", "Intermediate", "Bold"),
@@ -624,7 +553,7 @@ p_m_SOI <- ggplot(m_SOI_pred, aes(x = SOI, y = predicted, colour = boldness,
                                   group = boldness, fill = boldness)) + 
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
   geom_line(size = 1.1) +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(D) Males") + 
+  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(d) Males") + 
   scale_colour_manual(values = c("#2797FD", "#0262BA", "#01203D"), labels = c("Shy", "Intermediate", "Bold"), 
                       name = "Boldness") +
   scale_fill_manual(values = c("#90CAFE", "#0276DB", "#013E75"), labels = c("Shy", "Intermediate", "Bold"),

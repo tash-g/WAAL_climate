@@ -31,7 +31,7 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 
 # Functions
-## Calculate percentage changes for different groups
+## Calculate differences for different groups
 predict_diffs <- function(dataset, group, group_val, val_name, val1, val2) {
   
   if (!is.na(group) && !is.na(group_val)) {
@@ -39,57 +39,33 @@ predict_diffs <- function(dataset, group, group_val, val_name, val1, val2) {
                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) /
       subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted * 100 
     
-    lower_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.low) /
-      subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low * 100
-    
-    upper_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.high) /
-      subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high * 100
   } else {
     mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[val_name]] %in% val2)$predicted) /
       subset(dataset, dataset[[val_name]] %in% val1)$predicted * 100 
     
-    lower_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.low) /
-      subset(dataset, dataset[[val_name]] %in% val1)$conf.low * 100
-    
-    upper_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.high) /
-      subset(dataset, dataset[[val_name]] %in% val1)$conf.high * 100
   }
   
-  df_pred <- cbind(mean_pred, lower_pred, upper_pred)
-  return(df_pred)
+  return(mean_pred)
 }
 
 
+## Predict changes for different groups for proportional variables
 predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) {
   
   if (!is.na(group) && !is.na(group_val)) {
     mean_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) * 100 
     
-    lower_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.low) * 100
-    
-    upper_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$conf.high) * 100
   } else {
     mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
                     subset(dataset, dataset[[val_name]] %in% val2)$predicted) * 100 
     
-    lower_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.low -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.low) * 100
-    
-    upper_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$conf.high -
-                     subset(dataset, dataset[[val_name]] %in% val2)$conf.high) * 100
   }
   
-  df_pred <- cbind(mean_pred, lower_pred, upper_pred)
-  return(df_pred)
+  return(mean_pred)
 }
+
 
 
 # VISUALISATION ================================================================
@@ -198,7 +174,7 @@ car::scatterplotMatrix(~total_landings_hmm + travSearch_ratio + logmaxdistance.k
 # SAM #
 f_pathDist.SAM <- glmmTMB(totalpathdistance.km ~ 
                             SAMIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = Gamma(link = log),
                           data = female_mod)
 
@@ -208,7 +184,7 @@ tab_model(f_pathDist.SAM, show.stat = T)
 
 m_pathDist.SAM <- glmmTMB(totalpathdistance.km ~ 
                             SAMIndex * boldness +
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = Gamma(link = log),
                           data = male_mod)
 
@@ -220,7 +196,7 @@ tab_model(m_pathDist.SAM, show.stat = T)
 # SOI # 
 f_pathDist.SOI <- glmmTMB(totalpathdistance.km ~ 
                             SOIIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = Gamma(link = "log"),
                           data = female_mod)
 
@@ -231,7 +207,7 @@ tab_model(f_pathDist.SOI, show.stat = T)
 
 m_pathDist.SOI <- glmmTMB(totalpathdistance.km ~ 
                             SOIIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = Gamma(link = "log"),
                           data = male_mod)
 
@@ -245,7 +221,7 @@ tab_model(m_pathDist.SOI, show.stat = T)
 # SAM #
 f_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~ 
                               SAMIndex * boldness + 
-                              (1|Year) + (1|id), 
+                              (1|Year/id), 
                             family = beta_family,
                             data = female_mod)
 
@@ -256,7 +232,7 @@ tab_model(f_searchTrav.SAM, show.stat = TRUE)
 
 m_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~ 
                               SAMIndex * boldness + 
-                              (1|Year) + (1|id), 
+                              (1|Year/id), 
                             family = beta_family,
                             data = male_mod)
 
@@ -269,7 +245,7 @@ tab_model(m_searchTrav.SAM, show.stat = TRUE)
 # SOI # 
 f_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~ 
                               SOIIndex * boldness + 
-                              (1|Year) + (1|id), 
+                              (1|Year/id), 
                             family = beta_family,
                             data = female_mod)
 
@@ -280,7 +256,7 @@ tab_model(f_searchTrav.SOI, show.stat = TRUE)
 
 m_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~ 
                               SOIIndex * boldness + 
-                              (1|Year) + (1|id), 
+                              (1|Year/id), 
                             family = beta_family,
                             data = male_mod)
 
@@ -295,7 +271,7 @@ tab_model(m_searchTrav.SOI, show.stat = TRUE)
 # SAM #
 f_landings.SAM <- glmmTMB(total_landings_hmm ~ 
                             SAMIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = poisson(link = "log"),
                           data = female_mod)
 
@@ -307,7 +283,7 @@ tab_model(f_landings.SAM, show.stat = TRUE)
 
 m_landings.SAM <- glmmTMB(total_landings_hmm ~ 
                             SAMIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = poisson(),
                           data = male_mod)
 
@@ -320,7 +296,7 @@ tab_model(m_landings.SAM, show.stat = TRUE)
 # SOI # 
 f_landings.SOI <- glmmTMB(total_landings_hmm ~ 
                             SOIIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = poisson(link = "log"),
                           data = female_mod)
 
@@ -331,7 +307,7 @@ tab_model(f_landings.SOI, show.stat = TRUE)
 
 m_landings.SOI <- glmmTMB(total_landings_hmm ~ 
                             SOIIndex * boldness + 
-                            (1|Year) + (1|id), 
+                            (1|Year/id), 
                           family = poisson(link = "log"),
                           data = male_mod)
 
@@ -525,68 +501,69 @@ dev.off()
 #### Landings ------------------------------------------------------------------
 
 # Females #
-f_landings_sam.df <- data.frame(ggpredict(f_landings.SAM, terms = "SAMIndex")) %>% 
-  rename(SAM = x) 
-
-#### Make some predictions
-predict_diffs(f_landings_sam.df, NA, NA, "SAM", 0.5, 1.5)
-
-#### Build the plot
-
-f_landings_sam.plot <- ggplot(data = f_landings_sam.df, aes(y = predicted, x = SAM)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = female_fill) +
-  geom_line(linewidth = 1, col = female_col) +
-  stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = 0), 
-                     point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Annular Mode (Breeding)", y = "Number of landings per trip", title = "(a) Females") +
-  scale_y_continuous(limits = c(0, 35),
-                     breaks = seq(0, 35, 10)) +
-  theme_bw() +
-  theme(plot.title = element_text(face = "bold"))
-
-####
-
-f_landings_soi.df <- data.frame(ggpredict(f_landings.SOI, terms = c("SOIIndex", "boldness[-1.37, 0.094, 1.80]"))) %>% 
-  rename(SOI = x, boldness = group) 
+f_landings_sam.df <- data.frame(ggpredict(f_landings.SAM, terms = c("SAMIndex", "boldness[-1.37, 0.094, 1.80]"))) %>% 
+  rename(SAM = x, boldness = group) 
 
 #### Make some predictions
 # Overall reduction in landings with SOI
-predict_diffs(f_landings_soi.df, NA, NA, "SOI", 0, 1)
+mean(predict_diffs(f_landings_sam.df, NA, NA, "SAM", 0, 1))
 
 # Bold vs shy reduction in landings with SOI
-f_landings_soi.df$boldness <- as.character(as.numeric(f_landings_soi.df$boldness))
-min_boldness.f <- min(f_landings_soi.df$boldness)
-max_boldness.f <- max(f_landings_soi.df$boldness)
+f_landings_sam.df$boldness <- as.character(as.numeric(f_landings_sam.df$boldness))
+min_boldness.f <- min(f_landings_sam.df$boldness)
+max_boldness.f <- max(f_landings_sam.df$boldness)
 
-predict_diffs(f_landings_soi.df, "boldness", min_boldness.f, "SOI", 0, 1)
-predict_diffs(f_landings_soi.df, "boldness", max_boldness.f, "SOI", 0, 1)
+predict_diffs(f_landings_sam.df, "boldness", min_boldness.f, "SAM", 0, 1)
+predict_diffs(f_landings_sam.df, "boldness", max_boldness.f, "SAM", 0, 1)
 
 #### Build the plot
-f_landings_soi.df$boldness <- as.factor(f_landings_soi.df$boldness)
+f_landings_sam.df$boldness <- as.factor(f_landings_sam.df$boldness)
 
-f_landings_soi.plot <- ggplot() +
-  geom_ribbon(data = f_landings_soi.df, aes(y = predicted, x = SOI, 
+f_landings_sam.plot <- ggplot() +
+  geom_ribbon(data = f_landings_sam.df, aes(y = predicted, x = SAM, 
                                             group = boldness, col = boldness, 
                                             fill = boldness, ymin = conf.low, ymax = conf.high), 
               alpha = 0.15, col = NA) +
-  geom_line(data = f_landings_soi.df, aes(y = predicted, x = SOI, 
+  geom_line(data = f_landings_sam.df, aes(y = predicted, x = SAM, 
                                           group = boldness, col = boldness),
             linewidth = 1.5) +
   scale_colour_manual(values = c("#FFC20A", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"), 
                       name = "Boldness") +
   scale_fill_manual(values = c("#FFE48F", "#FFC20A", "#A37C01"), labels = c("Shy", "Intermediate", "Bold"),
                     name = "Boldness") +
-  stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = 0), 
+  stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "Number of landings per trip", title = "(c) Females") +
-  scale_y_continuous(limits = c(0, 70),
-                     breaks = seq(0, 70, 10)) +
+  labs(x = "Southern Annular Mode (Breeding)", y = "Number of landings per trip", title = "(a) Females") +
+  scale_y_continuous(limits = c(0, 55),
+                     breaks = seq(0, 55, 10)) +
   theme_bw() +
-  theme(legend.position = c(0.85,0.85),
+  theme(legend.position = c(0.9,0.9),
         legend.background = element_blank(),
         legend.box.background = element_blank(),
         legend.key = element_blank(),
         plot.title = element_text(face = "bold"))
+
+
+
+
+f_landings_soi.df <- data.frame(ggpredict(f_landings.SOI, terms = "SOIIndex")) %>% 
+  rename(SOI = x) 
+
+#### Make some predictions
+predict_diffs(f_landings_soi.df, NA, NA, "SOI", 0, 1)
+
+#### Build the plot
+f_landings_soi.plot <- ggplot(data = f_landings_soi.df, aes(y = predicted, x = SOI)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = female_fill) +
+  geom_line(linewidth = 1, col = female_col) +
+  stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = 0), 
+                     point_size = 3.5, colour = "darkgrey") +
+  labs(x = "Southern Oscillation Index (Breeding)", y = "Number of landings per trip", title = "(c) Females") +
+  scale_y_continuous(limits = c(0, 95),
+                     breaks = seq(0, 95, 25)) +
+  theme_bw() +
+  theme(plot.title = element_text(face = "bold"))
+
 
 
 # Males #
@@ -599,8 +576,8 @@ m_landings_sam.plot <- ggplot(data = m_landings_sam.df, aes(y = predicted, x = S
   stat_pointinterval(data = subset(sam_range, sex == "Males"), aes(x = SAMIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
   labs(x = "Southern Annular Mode (Breeding)", y = "Number of landings per trip", title = "(b) Males (N.S.)") +
-  scale_y_continuous(limits = c(0, 35),
-                     breaks = seq(0, 35, 10)) +
+  scale_y_continuous(limits = c(0, 55),
+                     breaks = seq(0, 55, 10)) +
   theme_bw() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
@@ -608,56 +585,28 @@ m_landings_sam.plot <- ggplot(data = m_landings_sam.df, aes(y = predicted, x = S
 
 ####
 
-m_landings_soi.df <- data.frame(ggpredict(m_landings.SOI, terms = c("SOIIndex", "boldness[01.95, -0.38, 1.40"))) %>% 
+m_landings_soi.df <- data.frame(ggpredict(m_landings.SOI, terms = "SOIIndex")) %>% 
   rename(SOI = x, boldness = group) 
 
 #### Make some predictions
-# Overall reduction in landings with SOI
 predict_diffs(m_landings_soi.df, NA, NA, "SOI", 0, 1)
-
-# Bold vs shy reduction in landings with SOI
-m_landings_soi.df$boldness <- as.character(as.numeric(m_landings_soi.df$boldness))
-min_boldness.m <- min(m_landings_soi.df$boldness)
-max_boldness.m <- max(m_landings_soi.df$boldness)
-
-predict_diffs(m_landings_soi.df, "boldness", min_boldness.m, "SOI", 0, 1)
-predict_diffs(m_landings_soi.df, "boldness", max_boldness.m, "SOI", 0, 1)
-
-( subset(m_landings_soi.df, boldness == max(boldness) & SOI == 0)$predicted -
-    subset(m_landings_soi.df, boldness == max(boldness) & SOI == 1)$predicted  ) /
-  subset(m_landings_soi.df, boldness == max(boldness) & SOI == 0)$predicted  * 100
-
-( subset(m_landings_soi.df, boldness == min(boldness) & SOI == 0)$predicted -
-    subset(m_landings_soi.df, boldness == min(boldness) & SOI == 1)$predicted  ) /
-  subset(m_landings_soi.df, boldness == min(boldness) & SOI == 0)$predicted  * 100
 
 m_landings_soi.df$boldness <- as.factor(m_landings_soi.df$boldness)
 
 #### Build the plot
-m_landings_soi.plot <- ggplot() +
-  geom_ribbon(data = m_landings_soi.df, aes(y = predicted, x = SOI, 
-                                            group = boldness, col = boldness, fill = boldness, ymin = conf.low, ymax = conf.high), 
-              alpha = 0.25, col = NA) +
-  geom_line(data = m_landings_soi.df, aes(y = predicted, x = SOI, 
-                                          group = boldness, col = boldness),
-            linewidth = 1.5) +
-  scale_colour_manual(values = c("#2797FD", "#0262BA", "#01203D"), labels = c("Shy", "Intermediate", "Bold"), 
-                      name = "Boldness") +
-  scale_fill_manual(values = c("#A0D1FE", "#0276DB", "#013E75"), labels = c("Shy", "Intermediate", "Bold"),
-                    name = "Boldness") +
+m_landings_soi.plot <- ggplot(data = m_landings_soi.df, aes(y = predicted, x = SOI)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
+  geom_line(linewidth = 1, col = male_col) +
   stat_pointinterval(data = subset(soi_range, sex == "Males"), aes(x = SOIIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
   labs(x = "Southern Oscillation Index (Breeding)", y = "Number of landings per trip", title = "(d) Males") +
-  scale_y_continuous(limits = c(0, 70),
-                     breaks = seq(0, 70, 10)) +
+  scale_y_continuous(limits = c(0, 95),
+                     breaks = seq(0, 95, 25)) +
   theme_bw() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
-        legend.position = c(0.85,0.85),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        legend.key = element_blank(),
         plot.title = element_text(face = "bold"))
+
 
 
 
@@ -667,7 +616,6 @@ png("Figures/FIG7_landings_by_SAMSOI.png", width = 12, height = 12, units = "in"
 ggpubr::ggarrange(f_landings_sam.plot, m_landings_sam.plot, 
                   f_landings_soi.plot, m_landings_soi.plot,
                   ncol = 2, nrow = 2,
-                  #align = "hv"
                   widths = c(1, 0.92))
 dev.off()
 
