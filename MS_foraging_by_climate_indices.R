@@ -110,7 +110,7 @@ ggpubr::ggarrange(raw_dist_plot, log_dist_plot,
 dev.off()
 
 
-# ANALYSIS =====================================================================
+# MODEL FITTING ================================================================
 
 load("Data_outputs/foraging_data_climate_analyses_M.RData")
 load("Data_outputs/foraging_data_climate_analyses_F.RData")
@@ -119,34 +119,42 @@ load("Data_outputs/foraging_data_climate_analyses_F.RData")
 
 ## FEMALES ##
 
-# Set id and year to factor
+## Set id and year to factor
 femalegps$id <- as.factor(femalegps$id)
 femalegps$Year <- as.factor(femalegps$Year)
 
-# Remove days that round to 0 and NA personalities
+## Remove days that round to 0 and NA personalities
 femalegps <- subset(femalegps, round(tripduration.days) > 0 & 
                       !is.na(boldness))
+
+## Get distance per day measure
+femalegps$distPerDay <- femalegps$totalpathdistance.km/femalegps$tripduration.days
 
 # Isolate key variables
 female_mod <- femalegps[,c("id", "Year", "Age", "DeploymentID", "sex", "totalpathdistance.km",
                            "propARSvsTravel_hmm", "total_landings_hmm", "boldness",
                            "SAMIndex", "IODIndex", "SOIIndex", "breeding_success",
-                           "attempted_breeding")]
+                           "attempted_breeding", "distPerDay", "tripduration.days")]
 
 ## MALES ##
 
-# Set id and year to factors
+## Set id and year to factors
 malegps$id <- as.factor(malegps$id)
 malegps$Year <- as.factor(malegps$Year)
 
-# Remove days that round to 0 and NA personalities
+## Remove days that round to 0 and NA personalities
 malegps <- subset(malegps, round(tripduration.days) > 0 & 
                     !is.na(boldness))
 
+## Get distance per day measure
+malegps$distPerDay <- malegps$totalpathdistance.km/malegps$tripduration.days
+
+
+# Isolate key variables
 male_mod <- malegps[,c("id", "Year", "Age", "DeploymentID", "sex", "totalpathdistance.km",
                        "propARSvsTravel_hmm", "total_landings_hmm", "boldness",
                        "SAMIndex", "IODIndex", "SOIIndex", "breeding_success",
-                       "attempted_breeding")]
+                       "attempted_breeding", "distPerDay", "tripduration.days")]
 
 ## Visualise variables ---------------------------------------------------------
 
@@ -172,6 +180,7 @@ car::scatterplotMatrix(~total_landings_hmm + travSearch_ratio + logmaxdistance.k
 #### Path distance -------------------------------------------------------------
 
 # SAM #
+# ~ F
 f_pathDist.SAM <- glmmTMB(totalpathdistance.km ~ 
                             SAMIndex * boldness + 
                             (1|Year/id), 
@@ -180,8 +189,13 @@ f_pathDist.SAM <- glmmTMB(totalpathdistance.km ~
 
 plot(simulateResiduals(f_pathDist.SAM))
 summary(f_pathDist.SAM)
+
+## Drop non-significant interactions
+f_pathDist.SAM <- update(f_pathDist.SAM, ~ SAMIndex + boldness + (1|Year/id))
+summary(f_pathDist.SAM)
 tab_model(f_pathDist.SAM, show.stat = T)
 
+# ~ M 
 m_pathDist.SAM <- glmmTMB(totalpathdistance.km ~ 
                             SAMIndex * boldness +
                             (1|Year/id), 
@@ -190,10 +204,15 @@ m_pathDist.SAM <- glmmTMB(totalpathdistance.km ~
 
 plot(simulateResiduals(m_pathDist.SAM))
 summary(m_pathDist.SAM)
+
+## Drop non-significant interactions
+m_pathDist.SAM <- update(m_pathDist.SAM, ~ SAMIndex + boldness + (1|Year/id))
+summary(m_pathDist.SAM)
 tab_model(m_pathDist.SAM, show.stat = T)
 
 
 # SOI # 
+# ~ F
 f_pathDist.SOI <- glmmTMB(totalpathdistance.km ~ 
                             SOIIndex * boldness + 
                             (1|Year/id), 
@@ -204,7 +223,7 @@ plot(simulateResiduals(f_pathDist.SOI))
 summary(f_pathDist.SOI)
 tab_model(f_pathDist.SOI, show.stat = T)
 
-
+# ~ M 
 m_pathDist.SOI <- glmmTMB(totalpathdistance.km ~ 
                             SOIIndex * boldness + 
                             (1|Year/id), 
@@ -213,12 +232,17 @@ m_pathDist.SOI <- glmmTMB(totalpathdistance.km ~
 
 plot(simulateResiduals(m_pathDist.SOI))
 summary(m_pathDist.SOI)
+
+## Drop non-significant interactions
+m_pathDist.SOI <- update(m_pathDist.SOI, ~ SOIIndex + boldness + (1|Year/id))
+summary(m_pathDist.SOI)
 tab_model(m_pathDist.SOI, show.stat = T)
 
 
 #### Prop Search:Travel --------------------------------------------------------
 
 # SAM #
+# ~ F
 f_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~ 
                               SAMIndex * boldness + 
                               (1|Year/id), 
@@ -227,9 +251,13 @@ f_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~
 
 plot(simulateResiduals(f_searchTrav.SAM))
 summary(f_searchTrav.SAM)
+
+## Drop non-significant interactions
+f_searchTrav.SAM <- update(f_searchTrav.SAM, ~ SAMIndex + boldness + (1|Year/id))
+summary(f_searchTrav.SAM)
 tab_model(f_searchTrav.SAM, show.stat = TRUE)
 
-
+# ~ M
 m_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~ 
                               SAMIndex * boldness + 
                               (1|Year/id), 
@@ -238,11 +266,16 @@ m_searchTrav.SAM <- glmmTMB(propARSvsTravel_hmm ~
 
 plot(simulateResiduals(m_searchTrav.SAM))
 summary(m_searchTrav.SAM)
+
+## Drop non-significant interactions
+m_searchTrav.SAM <- update(m_searchTrav.SAM, ~ SAMIndex + boldness + (1|Year/id))
+summary(m_searchTrav.SAM)
 tab_model(m_searchTrav.SAM, show.stat = TRUE)
 
 
 
 # SOI # 
+# ~ F
 f_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~ 
                               SOIIndex * boldness + 
                               (1|Year/id), 
@@ -251,9 +284,13 @@ f_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~
 
 plot(simulateResiduals(f_searchTrav.SOI))
 summary(f_searchTrav.SOI)
+
+## Drop non-significant interactions
+f_searchTrav.SOI <- update(f_searchTrav.SOI, ~ SOIIndex + boldness + (1|Year/id))
+summary(f_searchTrav.SOI)
 tab_model(f_searchTrav.SOI, show.stat = TRUE)
 
-
+# ~ M
 m_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~ 
                               SOIIndex * boldness + 
                               (1|Year/id), 
@@ -262,13 +299,17 @@ m_searchTrav.SOI <- glmmTMB(propARSvsTravel_hmm ~
 
 plot(simulateResiduals(m_searchTrav.SOI))
 summary(m_searchTrav.SOI)
-tab_model(m_searchTrav.SOI, show.stat = TRUE)
 
+## Drop non-significant interactions
+m_searchTrav.SOI <- update(m_searchTrav.SOI, ~ SOIIndex + boldness + (1|Year/id))
+summary(m_searchTrav.SOI)
+tab_model(m_searchTrav.SOI, show.stat = TRUE)
 
 
 #### Number of landings --------------------------------------------------------
 
 # SAM #
+# ~ F
 f_landings.SAM <- glmmTMB(total_landings_hmm ~ 
                             SAMIndex * boldness + 
                             (1|Year/id), 
@@ -279,8 +320,7 @@ plot(simulateResiduals(f_landings.SAM))
 summary(f_landings.SAM)
 tab_model(f_landings.SAM, show.stat = TRUE)
 
-
-
+# ~ M
 m_landings.SAM <- glmmTMB(total_landings_hmm ~ 
                             SAMIndex * boldness + 
                             (1|Year/id), 
@@ -289,11 +329,16 @@ m_landings.SAM <- glmmTMB(total_landings_hmm ~
 
 plot(simulateResiduals(m_landings.SAM))
 summary(m_landings.SAM)
+
+## Drop non-significant interactions
+m_landings.SAM <- update(m_landings.SAM, ~ SAMIndex + boldness + (1|Year/id))
+summary(m_landings.SAM)
 tab_model(m_landings.SAM, show.stat = TRUE)
 
 
 
 # SOI # 
+# ~ F
 f_landings.SOI <- glmmTMB(total_landings_hmm ~ 
                             SOIIndex * boldness + 
                             (1|Year/id), 
@@ -302,9 +347,13 @@ f_landings.SOI <- glmmTMB(total_landings_hmm ~
 
 plot(simulateResiduals(f_landings.SOI))
 summary(f_landings.SOI)
+
+## Drop non-significant interactions
+f_landings.SOI <- update(f_landings.SOI, ~ SOIIndex + boldness + (1|Year/id))
+summary(f_landings.SOI)
 tab_model(f_landings.SOI, show.stat = TRUE)
 
-
+# ~ M
 m_landings.SOI <- glmmTMB(total_landings_hmm ~ 
                             SOIIndex * boldness + 
                             (1|Year/id), 
@@ -313,11 +362,14 @@ m_landings.SOI <- glmmTMB(total_landings_hmm ~
 
 plot(simulateResiduals(m_landings.SOI))
 summary(m_landings.SOI)
+
+## Drop non-significant interactions
+m_landings.SOI <- update(m_landings.SOI, ~ SOIIndex + boldness + (1|Year/id))
+summary(m_landings.SOI)
 tab_model(m_landings.SOI, show.stat = TRUE)
 
 
-## Plot the model predictions -------------------------------------------------
-
+# MODEL PLOTTING & PREDICTIONS #################################################
 female_col <- "#FFC20A"
 female_fill <- "#f7dc8b"
 male_col <- "#0C7BDC"
@@ -328,19 +380,22 @@ soi_range <- rbind(male_mod, female_mod) %>%
   dplyr::select(c(SOIIndex, sex)) %>% 
   mutate(sex = if_else(sex == "Male", "Males", "Females"))
 
-iod_range <- rbind(male_mod, female_mod) %>% 
-  dplyr::select(c(IODIndex, sex)) %>% 
-  mutate(sex = if_else(sex == "Male", "Males", "Females"))
-
 sam_range <- rbind(male_mod, female_mod) %>% 
   dplyr::select(c(SAMIndex, sex)) %>% 
   mutate(sex = if_else(sex == "Male", "Males", "Females"))
 
+# Boldness quantiles
+quantile(femalegps$boldness, c(0.1, 0.5, 0.9))
+# 10%         50%         90% 
+# -1.27540065  0.02783998  1.90034646 
+quantile(malegps$boldness, c(0.1, 0.5, 0.9))
+# 10%       50%       90% 
+# -1.979724 -0.319167  1.340847 
 
-#### Path distance -------------------------------------------------------------
+## Path distance ---------------------------------------------------------------
 
 # Females #
-f_pathDist_soi.df <- data.frame(ggpredict(f_pathDist.SOI, terms = c("SOIIndex", "boldness[-1.37, 0.094, 1.80]"))) %>% 
+f_pathDist_soi.df <- data.frame(ggpredict(f_pathDist.SOI, terms = c("SOIIndex", "boldness[-1.275, 0.0278, 1.9]"))) %>% 
   rename(SOI = x, boldness = group) %>%
   mutate(boldness = as.numeric(boldness), boldness = case_when(boldness == min(boldness) ~ "Shy",
                               boldness == max(boldness) ~ "Bold",
@@ -351,8 +406,8 @@ f_pathDist_soi.df$boldness <- factor(f_pathDist_soi.df$boldness, levels = c("Shy
 #### Make some predictions
 
 # Bold vs shy reduction in distance with SOI
-predict_diffs(f_pathDist_soi.df, "boldness", "Bold", "SOI", -2, 2)
-predict_diffs(f_pathDist_soi.df, "boldness", "Shy", "SOI", -2, 2)
+predict_diffs(f_pathDist_soi.df, "boldness", "Bold", "SOI", 0, 1)
+predict_diffs(f_pathDist_soi.df, "boldness", "Shy", "SOI", 0, 1)
 
 
 #### Build the plot 
@@ -362,7 +417,7 @@ f_pathDist_soi.plot <- ggplot() +
               ymin = conf.low, ymax = conf.high, fill = boldness), alpha = 0.2) +
   stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = 4), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "Total trip distance (km)", title = "Females") +
+  labs(x = "Monthly Southern Oscillation Index", y = "Total trip distance (km)", title = "Females") +
   scale_y_continuous(limits = c(0,15000),
                       breaks = seq(0, 15000, 2500)) +
   scale_colour_manual(values = c("#FFE48F", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"),
@@ -382,28 +437,30 @@ m_pathDist_soi.df <- data.frame(ggpredict(m_pathDist.SOI, terms = "SOIIndex")) %
   rename(SOI = x) 
 
 #### Make some predictions
-# Reduction in distance for 1 point increase in SOI
-predict_diffs(m_pathDist_soi.df, NA, NA, "SOI", -2, 2)
+#  Reduction in distance for 1 point increase in SOI
+predict_diffs(m_pathDist_soi.df, NA, NA, "SOI", -1, 0)
+
 
 #### Build the plot 
-m_pathDist_soi.plot <- ggplot(data = m_pathDist_soi.df, aes(y = predicted, x = SOI)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
-  geom_line(linewidth = 1, col = male_col) +
+m_pathDist_soi.plot <- ggplot() +
+  geom_line(data = m_pathDist_soi.df, aes(y = predicted, x = SOI), col = male_col, linewidth = 1) +
+  geom_ribbon(data = m_pathDist_soi.df, aes(y = predicted, x = SOI,
+                                            ymin = conf.low, ymax = conf.high), 
+              alpha = 0.2, fill = male_fill) +
   stat_pointinterval(data = subset(soi_range, sex == "Males"), aes(x = SOIIndex, y = 4), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", title = "Males") +
+  labs(x = "Monthly Southern Oscillation Index", y = "Total trip distance (km)", title = "Males") +
   scale_y_continuous(limits = c(0,15000),
                      breaks = seq(0, 15000, 2500)) +
+  
   theme_bw() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
         plot.title = element_text(face = "bold"))
 
+### FIGURE 3: path distance ~ SOI ------------------------------------------------
 
-
-### FIGURE 5: path distance ~ SOI ------------------------------------------------
-
-png("Figures/FIG5_pathDist_by_SOI.png", width = 12, height = 6, units = "in", res = 300)
+png("Figures/FIG3_pathDist_by_SOI.png", width = 12, height = 6, units = "in", res = 300)
 ggpubr::ggarrange(f_pathDist_soi.plot, m_pathDist_soi.plot, 
                   ncol = 2, nrow = 1,
                   widths = c(1, 0.92))
@@ -424,7 +481,7 @@ f_searchTrav_sam.plot <- ggplot(data = f_searchTrav_sam.df, aes(y = predicted, x
   geom_line(linewidth = 1, col = female_col) +
   stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = 0.35), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Annular Mode (Breeding)", y = "Ratio time spent in search : travel", title = "(a) Females") +
+  labs(x = "Monthly Southern Annular Mode", y = "Ratio time spent in search : travel", title = "(a) Females") +
   scale_y_continuous(limits = c(0.35, 0.75),
                      breaks = seq(0.35, 0.75, 0.05)) +
   theme_bw() +
@@ -444,7 +501,7 @@ f_searchTrav_soi.plot <- ggplot(data = f_searchTrav_soi.df, aes(y = predicted, x
   geom_line(linewidth = 1, col = female_col) +
   stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = 0.35), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "Ratio time spent in search : travel", title = " (c) Females") +
+  labs(x = "Monthly Southern Oscillation Index", y = "Ratio time spent in search : travel", title = " (c) Females") +
   scale_y_continuous(limits = c(0.35, 0.75),
                      breaks = seq(0.35, 0.75, 0.05)) +
   theme_bw()  +
@@ -457,10 +514,10 @@ m_searchTrav_sam.df <- data.frame(ggpredict(m_searchTrav.SAM, terms = "SAMIndex"
 
 m_searchTrav_sam.plot <- ggplot(data = m_searchTrav_sam.df, aes(y = predicted, x = SAM)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
-  geom_line(linewidth = 1, col = male_col) +
+  geom_line(linewidth = 1, col = male_col, linetype = "dashed") +
   stat_pointinterval(data = subset(sam_range, sex == "Males"), aes(x = SAMIndex, y = 0.35), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Annular Mode (Breeding)", title = "(b) Males (n.s.)") +
+  labs(x = "Monthly Southern Annular Mode", title = "(b) Males (n.s.)") +
   scale_y_continuous(limits = c(0.35, 0.75),
                      breaks = seq(0.35, 0.75, 0.05)) +
   theme_bw() +
@@ -476,10 +533,10 @@ m_searchTrav_soi.df <- data.frame(ggpredict(m_searchTrav.SOI, terms = "SOIIndex"
 
 m_searchTrav_soi.plot <- ggplot(data = m_searchTrav_soi.df, aes(y = predicted, x = SOI)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
-  geom_line(linewidth = 1, col = male_col) +
+  geom_line(linewidth = 1, col = male_col, linetype = "dashed") +
   stat_pointinterval(data = subset(soi_range, sex == "Males"), aes(x = SOIIndex, y = 0.35), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", title = "(d) Males (n.s.)") +
+  labs(x = "Monthly Southern Oscillation Index", title = "(d) Males (n.s.)") +
   scale_y_continuous(limits = c(0.35, 0.75),
                      breaks = seq(0.35, 0.75, 0.05)) +
   theme_bw() +
@@ -488,9 +545,9 @@ m_searchTrav_soi.plot <- ggplot(data = m_searchTrav_soi.df, aes(y = predicted, x
         plot.title = element_text(face = "bold"))
 
 
-### FIGURE 6: travel : search ~ SOI, SAM, IOD ------------------------------------
+### FIGURE 4: travel : search ~ SOI, SAM, IOD ------------------------------------
 
-png("Figures/FIG6_searchTrav_by_SOISAM.png", width = 12, height = 12, units = "in", res = 300)
+png("Figures/FIG4_searchTrav_by_SOISAM.png", width = 12, height = 12, units = "in", res = 300)
 ggpubr::ggarrange(f_searchTrav_sam.plot, m_searchTrav_sam.plot, 
                   f_searchTrav_soi.plot, m_searchTrav_soi.plot,
                   ncol = 2, nrow = 2,
@@ -501,7 +558,8 @@ dev.off()
 #### Landings ------------------------------------------------------------------
 
 # Females #
-f_landings_sam.df <- data.frame(ggpredict(f_landings.SAM, terms = c("SAMIndex", "boldness[-1.37, 0.094, 1.80]"))) %>% 
+# SAM #
+f_landings_sam.df <- data.frame(ggpredict(f_landings.SAM, terms = c("SAMIndex", "boldness[-1.275, 0.0278, 1.9]"))) %>% 
   rename(SAM = x, boldness = group) 
 
 #### Make some predictions
@@ -533,7 +591,7 @@ f_landings_sam.plot <- ggplot() +
                     name = "Boldness") +
   stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Annular Mode (Breeding)", y = "Number of landings per trip", title = "(a) Females") +
+  labs(x = "Monthly Southern Annular Mode", y = "Number of landings per day", title = "(a) Females") +
   scale_y_continuous(limits = c(0, 55),
                      breaks = seq(0, 55, 10)) +
   theme_bw() +
@@ -545,37 +603,63 @@ f_landings_sam.plot <- ggplot() +
 
 
 
-
-f_landings_soi.df <- data.frame(ggpredict(f_landings.SOI, terms = "SOIIndex")) %>% 
-  rename(SOI = x) 
+# SOI #
+f_landings_soi.df <- data.frame(ggpredict(f_landings.SOI, terms = c("SOIIndex", "boldness[-1.275, 0.0278, 1.9]"))) %>% 
+  rename(SOI = x, boldness = group)
 
 #### Make some predictions
-predict_diffs(f_landings_soi.df, NA, NA, "SOI", 0, 1)
+# Overall reduction in landings with SOI
+mean(predict_diffs(f_landings_soi.df, NA, NA, "SOI", 0, 1))
+
+# Bold vs shy reduction in landings with SOI
+f_landings_soi.df$boldness <- as.character(as.numeric(f_landings_soi.df$boldness))
+min_boldness.f <- min(f_landings_soi.df$boldness)
+max_boldness.f <- max(f_landings_soi.df$boldness)
+
+mean(subset(f_landings_soi.df, boldness == min_boldness.f)$predicted)
+
+predict_diffs(f_landings_soi.df, "boldness", min_boldness.f, "SOI", 0, 1)
+predict_diffs(f_landings_soi.df, "boldness", max_boldness.f, "SOI", 0, 1)
+
+#
+
 
 #### Build the plot
-f_landings_soi.plot <- ggplot(data = f_landings_soi.df, aes(y = predicted, x = SOI)) +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = female_fill) +
-  geom_line(linewidth = 1, col = female_col) +
+f_landings_soi.df$boldness <- as.factor(f_landings_soi.df$boldness)
+
+f_landings_soi.plot <- ggplot() +
+  geom_ribbon(data = f_landings_soi.df, aes(y = predicted, x = SOI, 
+                                            group = boldness, col = boldness, 
+                                            fill = boldness, ymin = conf.low, ymax = conf.high), 
+              alpha = 0.15, col = NA) +
+  geom_line(data = f_landings_soi.df, aes(y = predicted, x = SOI, 
+                                          group = boldness, col = boldness),
+            linewidth = 1.5) +
+  scale_colour_manual(values = c("#FFC20A", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"), 
+                      name = "Boldness") +
+  scale_fill_manual(values = c("#FFE48F", "#FFC20A", "#A37C01"), labels = c("Shy", "Intermediate", "Bold"),
+                    name = "Boldness") +
   stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "Number of landings per trip", title = "(c) Females") +
-  scale_y_continuous(limits = c(0, 95),
-                     breaks = seq(0, 95, 25)) +
+  labs(x = "Monthly Southern Oscillation Index", y = "Number of landings per day", title = "(c) Females") +
+  scale_y_continuous(limits = c(0, 110),
+                     breaks = seq(0, 110, 20)) +
   theme_bw() +
-  theme(plot.title = element_text(face = "bold"))
-
+  theme(legend.position = "none",
+        plot.title = element_text(face = "bold"))
 
 
 # Males #
+# SAM #
 m_landings_sam.df <- data.frame(ggpredict(m_landings.SAM, terms = "SAMIndex")) %>% 
   rename(SAM = x) 
 
 m_landings_sam.plot <- ggplot(data = m_landings_sam.df, aes(y = predicted, x = SAM)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
-  geom_line(linewidth = 1, col = male_col) +
+  geom_line(linewidth = 1, col = male_col, linetype = "dashed") +
   stat_pointinterval(data = subset(sam_range, sex == "Males"), aes(x = SAMIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Annular Mode (Breeding)", y = "Number of landings per trip", title = "(b) Males (N.S.)") +
+  labs(x = "Monthly Southern Annular Mode", y = "Number of landings per day", title = "(b) Males (N.S.)") +
   scale_y_continuous(limits = c(0, 55),
                      breaks = seq(0, 55, 10)) +
   theme_bw() +
@@ -584,7 +668,7 @@ m_landings_sam.plot <- ggplot(data = m_landings_sam.df, aes(y = predicted, x = S
         plot.title = element_text(face = "bold"))
 
 ####
-
+# SOI #
 m_landings_soi.df <- data.frame(ggpredict(m_landings.SOI, terms = "SOIIndex")) %>% 
   rename(SOI = x, boldness = group) 
 
@@ -599,9 +683,9 @@ m_landings_soi.plot <- ggplot(data = m_landings_soi.df, aes(y = predicted, x = S
   geom_line(linewidth = 1, col = male_col) +
   stat_pointinterval(data = subset(soi_range, sex == "Males"), aes(x = SOIIndex, y = 0), 
                      point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "Number of landings per trip", title = "(d) Males") +
-  scale_y_continuous(limits = c(0, 95),
-                     breaks = seq(0, 95, 25)) +
+  labs(x = "Monthly Southern Oscillation Index", y = "Number of landings per trip", title = "(d) Males") +
+  scale_y_continuous(limits = c(0, 120),
+                     breaks = seq(0, 120, 20)) +
   theme_bw() +
   theme(axis.text.y = element_blank(),
         axis.title.y = element_blank(),
@@ -610,9 +694,9 @@ m_landings_soi.plot <- ggplot(data = m_landings_soi.df, aes(y = predicted, x = S
 
 
 
-### FIGURE 7: landings ~ SOI + SAM -----------------------------------------------
+### FIGURE 5: landings ~ SOI + SAM -----------------------------------------------
 
-png("Figures/FIG7_landings_by_SAMSOI.png", width = 12, height = 12, units = "in", res = 300)
+png("Figures/FIG5_landings_by_SAMSOI.png", width = 12, height = 12, units = "in", res = 300)
 ggpubr::ggarrange(f_landings_sam.plot, m_landings_sam.plot, 
                   f_landings_soi.plot, m_landings_soi.plot,
                   ncol = 2, nrow = 2,
@@ -628,6 +712,13 @@ dev.off()
 #####
 #####
 #####
+
+##### MALE BOLDNESS COLOURS
+scale_colour_manual(values = c("#2797FD", "#0262BA", "#01203D"), labels = c("Shy", "Intermediate", "Bold"), 
+                    name = "Boldness") +
+  scale_fill_manual(values = c("#90CAFE", "#0276DB", "#013E75"), labels = c("Shy", "Intermediate", "Bold"),
+                    name = "Boldness") +
+
 # BAYESIAN MULTIPLE MULTIVARIATE REGRESSION ------------------------------------
 
 ## Uses the BNSP package
