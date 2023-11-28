@@ -31,6 +31,13 @@ invisible(lapply(packages, library, character.only = TRUE))
 #   1 Females      1.80     -1.37 -0.0937
 # 2 Males        1.40     -1.95 -0.376 
 
+## Set colours
+female_col <- "#FFC20A"
+female_fill <- "#f7dc8b"
+male_col <- "#0C7BDC"
+male_fill <- "#91c1eb"
+
+
 # Function
 ## Calculate differences for different groups
 predict_diffs <- function(dataset, group, group_val, val_name, val1, val2) {
@@ -132,15 +139,15 @@ climate_prebreeding <- soi %>%
 climate_breeding <- soi %>% 
   #mutate(Year = ifelse(month == "12", Year + 1, Year)) %>%    
   group_by(Year) %>% 
-  summarise(avgSOI_breeding = mean(SOIIndex[month %in% 1:2])) %>% 
+  summarise(avgSOI_breeding = mean(SOIIndex[month %in% 1:4])) %>% 
   left_join(sam %>% 
               #mutate(year = ifelse(month == "12", year + 1, year)) %>% 
               group_by(Year) %>% 
-              summarise(avgSAM_breeding = mean(SAMIndex[month %in% 1:2]))) %>% 
+              summarise(avgSAM_breeding = mean(SAMIndex[month %in% 1:4]))) %>% 
   left_join(iod %>% 
               #mutate(year = ifelse(month == "12", year + 1, year)) %>% 
               group_by(Year) %>% 
-              summarise(avgIOD_breeding = mean(IODIndex[month %in% 1:2]))) %>% 
+              summarise(avgIOD_breeding = mean(IODIndex[month %in% 1:4]))) %>% 
   mutate(Year = as.factor(Year)) %>%
   rename(year = Year)
 
@@ -186,91 +193,16 @@ ggplot(waal_rs,
 
 # FIT THE MODELS ===============================================================
 
-### Population-level breeding success with climate -----------------------------
-
-# Calculate mean RS per year
-annual_rs <- waal_rs %>%
-    group_by(year, avgSAM_breeding, avgSOI_prebreeding, avgIOD_breeding) %>%
-    summarise(n_birds = n_distinct(Metalring),
-              mean_rs = mean(breeding_success, na.rm = T)) %>%
-  filter(n_birds > 3)
-              
-# Get weighted overall mean
-annual_means <- waal_rs %>%
-  group_by(year) %>%
-  summarize(annual_rs = mean(breeding_success, na.rm = T),
-            n_inds = n())
-
-annual_means$weights <- annual_means$n_inds/sum(annual_means$n_inds)
-xm <- weighted.mean(annual_means$annual_rs, annual_means$weights)
-#[1] 0.7809899
-
-weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
-sqrt(weighted_var)
-
-# Breeding success as a function of climate variables
-RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding + avgSAM_prebreeding +
-                          avgSOI_breeding + avgSOI_prebreeding + (1|year/Metalring), 
-                   data = waal_rs, family = "binomial")
-
-tab_model(RS_climate_glmer, show.stat = T)
-
-## Plot results
-
-# SAM : 
-RS_sam_plot <- ggplot() + 
-  geom_point(data = annual_rs, aes(x = avgSAM_breeding, y = mean_rs, 
-                                   size = n_birds)) +
-  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
-                                                  y = mean_rs, label = year),
-                            segment.color = "darkorange",
-                            min.segment.length = 0.1) +
-  labs(x = "Arithmetic mean Southern Annular Mode (January to February)",
-       y = "Breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
-  theme_bw() + 
-  theme(legend.position = "none")
-
-
-# SOI : 
-RS_soi_plot <- ggplot() +
-  geom_point(data = annual_rs, aes(x = avgSOI_prebreeding, y = mean_rs, 
-                                   size = n_birds)) +
-  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_prebreeding, 
-                                                  y = mean_rs, label = year),
-                            segment.color = "darkorange",
-                            min.segment.length = 0.1) +
-  labs(x = "Arithmetic mean Southern Oscillation Index (September to November)",
-       y = "Breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
-  theme_bw() + 
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank())
-
-
-# FIGURE 3: breeding success ~ climate =========================================
-
-png("Figures/FIG3_RS_by_climate.png", width = 12, height = 6, units = "in", res = 300)
-ggpubr::ggarrange(RS_sam_plot, RS_soi_plot,
-                  ncol = 2, nrow = 1,
-                  widths = c(1, 0.92))
-dev.off()
-
-
-
+# Individual level effects of climate on reproductive success ------------------
 
 ### Isolate variables and rename
 waal_rs %<>% dplyr::select(c("Metalring", "Sex", "year", "ReproCode", "Age", "AFR", 
-                     "boldness_BLUP_mean", "attempted_breeding", "breeding_success",
-                     "prevyear",  "avgSOI_breeding", "avgSAM_breeding",    
-                     "avgIOD_breeding", "avgSOI_prebreeding", "avgSAM_prebreeding",
-                     "avgIOD_prebreeding")) %>%
+                             "boldness_BLUP_mean", "attempted_breeding", "breeding_success",
+                             "prevyear",  "avgSOI_breeding", "avgSAM_breeding",    
+                             "avgIOD_breeding", "avgSOI_prebreeding", "avgSAM_prebreeding",
+                             "avgIOD_prebreeding")) %>%
   rename(ring = Metalring) 
 
-
-
-# Individual level effects of climate on reproductive success ------------------
 
 # Separate males and females
 female_rs <- waal_rs %>% filter(Sex == "F" & !is.na(boldness_BLUP_mean))
@@ -286,8 +218,7 @@ female_rs %<>%
          avgSOI_breeding_s = scale(avgSOI_breeding),
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
-         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) %>%
-  rename(ring = Metalring)
+         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) 
 
 male_rs %<>% 
   mutate(age_s = scale(Age),
@@ -298,9 +229,7 @@ male_rs %<>%
          avgSOI_breeding_s = scale(avgSOI_breeding),
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
-         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) %>%
-  rename(ring = Metalring)
-
+         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) 
 
 
 ## How does the probability of breeding success change with climate ------------
@@ -318,81 +247,31 @@ f_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +
                  family = "binomial")
 
 summary(f_SAM_glmm)
+
+## Remove non-significant random effects
+f_SAM_glmm <- update(f_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
+                           avgSAM_breeding_s + boldness_s + prevyear +
+                           I(age_s^2):avgSAM_breeding_s +
+                           (1|year/ring))
+
+summary(f_SAM_glmm)
+
+f_SAM_glmm <- update(f_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
+                       avgSAM_breeding_s + boldness_s + prevyear + (1|year/ring))
+
 tab_model(f_SAM_glmm, show.stat = T)
 
-f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s"))) %>% 
-  rename(SAM = group) 
-# Unscale age
+f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]")))
 f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
-# Find quantiles of SAM
-f_SAM_levels <- unique(f_SAM_pred$SAM)[as.numeric(round(quantile(1:length(unique(f_SAM_pred$SAM)), 
-                                                                 probs = c(0.10, 0.5, 0.90))))]
-
-f_SAM_pred %<>% 
-  filter(SAM %in% f_SAM_levels) %>% 
-  mutate(SAM = as.numeric(as.character(SAM))) %>% 
-  mutate(`SAM (Breeding)` = case_when(SAM == min(SAM) ~ "Low", 
-                                      SAM == max(SAM) ~ "High", 
-                                      TRUE ~ "Medium"))
-
-# Reorder factors
-f_SAM_pred$`SAM (Breeding)` <- factor(f_SAM_pred$`SAM (Breeding)`, levels = c("High", "Medium", "Low"))
-young_pred <- subset(f_SAM_pred, age == min(f_SAM_pred$age) & `SAM (Breeding)` != "Medium")
-(young_pred$predicted[2] - young_pred$predicted[1])*100
 
 # Build the plot
-p_f_SAM <- ggplot(f_SAM_pred, aes(x = age, y = predicted, colour = `SAM (Breeding)`, 
-                                  group = `SAM (Breeding)`, fill = `SAM (Breeding)`)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
+p_f_age <- ggplot(f_SAM_pred, aes(x = age, y = predicted)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = female_fill) +
+  geom_line(size = 1.1, col = female_col) +
   labs(x = "Age, years", y = "P|Successful", title = "Females") + 
-  scale_colour_viridis_d() +
   ylim(c(0,1)) +
   theme_bw() +
   theme(legend.position = c(0.15, 0.15),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        legend.key = element_blank())
-
-
-
-## ALTERNATIVE - SAM focused
-f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s [all]"))) %>% 
-  rename(SAM = group) 
-f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
-f_SAM_pred$SAM <- as.numeric(as.character(f_SAM_pred$SAM))
-f_SAM_pred$SAM <- (f_SAM_pred$SAM*sd(female_rs$avgSAM_breeding)) + mean(female_rs$avgSAM_breeding)
-f_age_levels <- unique(f_SAM_pred$age)[as.numeric(round(quantile(1:length(unique(f_SAM_pred$age)), 
-                                                                 probs = c(0.10, 0.5, 0.90))))]
-
-f_SAM_pred %<>% 
-  filter(age %in% f_age_levels) %>% 
-  mutate(age = as.numeric(as.character(age))) %>% 
-  mutate(`Age` = case_when(age == min(age) ~ "Young (10 years)", 
-                           age == max(age) ~ "Old (44 years)", 
-                                      TRUE ~ "Mid (27 years)"))
-
-f_SAM_pred$Age <- factor(f_SAM_pred$Age, levels = c("Young (10 years)", "Mid (27 years)", "Old (44 years)"))
-
-
-#### Make some predictions
-maxSAM <- max(f_SAM_pred$SAM)
-minSAM <- min(f_SAM_pred$SAM)
-
-predict_diffs.prop(f_SAM_pred, "Age", "Young (10 years)", "SAM", maxSAM, minSAM)
-predict_diffs.prop(f_SAM_pred, "Age", "Mid (27 years)", "SAM", maxSAM, minSAM)
-predict_diffs.prop(f_SAM_pred, "Age", "Old (44 years)", "SAM", maxSAM, minSAM)
-
-#### Build the plot
-p_f_SAM <- ggplot(f_SAM_pred, aes(x = SAM, y = predicted, colour = Age, 
-                       group = Age, fill = Age)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(a) Females") + 
-  scale_colour_viridis_d() +
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.85, 0.15),
         legend.background = element_blank(),
         legend.box.background = element_blank(),
         legend.key = element_blank())
@@ -411,68 +290,30 @@ m_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +
                  family = "binomial")
 
 summary(m_SAM_glmm)
+
+## Drop non-significant interactions
+m_SAM_glmm <- update(m_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
+                       avgSAM_breeding_s + boldness_s + prevyear + (1|year/ring))
+
+summary(m_SAM_glmm)
 tab_model(m_SAM_glmm, show.stat = T)
 
-m_SAM_pred <- data.frame(ggpredict(m_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s"))) %>% 
-  rename(SAM = group) 
-# Unscale age
-m_SAM_pred$age <- (m_SAM_pred$x*sd(male_rs$Age)) + mean(male_rs$Age) # 10%, 50%, 90%
-# Find quantiles of SAM
-m_SAM_levels <- unique(m_SAM_pred$SAM)[as.numeric(round(quantile(1:length(unique(m_SAM_pred$SAM)), 
-                                                                 probs = c(0.10, 0.5, 0.90))))]
-m_SAM_pred %<>% 
-  filter(SAM %in% m_SAM_levels) %>% 
-  mutate(SAM = as.numeric(as.character(SAM))) %>% 
-  mutate(`SAM (Breeding)` = case_when(SAM == min(SAM) ~ "Low", 
-                                      SAM == max(SAM) ~ "High", 
-                                      TRUE ~ "Medium"))
 
-m_SAM_pred$`SAM (Breeding)` <- factor(m_SAM_pred$`SAM (Breeding)`, levels = c("High", "Medium", "Low"))
-
-p_m_SAM <- ggplot(m_SAM_pred, aes(x = age, y = predicted, colour = `SAM (Breeding)`, 
-                                  group = `SAM (Breeding)`, fill = `SAM (Breeding)`)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Age, years", y = "P|Successful", title = "Males (n.s.)") + 
-  scale_colour_viridis_d() +
-  ylim(c(0,1)) + xlim(c(7,50)) +
-  theme_bw() +
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank())
-
-## ALTERNATIVE - SAM focused
-m_SAM_pred <- data.frame(ggpredict(m_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s [all]"))) %>% 
-  rename(SAM = group) 
+# Get the plot data
+m_SAM_pred <- data.frame(ggpredict(m_SAM_glmm, terms = c("age_s [all]")))
 m_SAM_pred$age <- (m_SAM_pred$x*sd(male_rs$Age)) + mean(male_rs$Age)
-m_SAM_pred$SAM <- as.numeric(as.character(m_SAM_pred$SAM))
-m_SAM_pred$SAM <- (m_SAM_pred$SAM*sd(male_rs$avgSAM_breeding)) + mean(male_rs$avgSAM_breeding)
-m_age_levels <- unique(m_SAM_pred$age)[as.numeric(round(quantile(1:length(unique(m_SAM_pred$age)), 
-                                                                 probs = c(0.10, 0.5, 0.90))))]
-m_SAM_pred$SAM <- as.numeric(as.character(m_SAM_pred$SAM))
 
-m_SAM_pred %<>% 
-  filter(age %in% m_age_levels) %>% 
-  mutate(age = as.numeric(as.character(age))) %>% 
-  mutate(Age = case_when(age == min(age) ~ "Young (10 years)", 
-                           age == max(age) ~ "Old (44 years)", 
-                           TRUE ~ "Mid (27 years)"))
-
-m_SAM_pred$Age <- factor(m_SAM_pred$Age, levels = c("Young (10 years)", "Mid (27 years)", "Old (44 years)"))
-
-p_m_SAM <- ggplot(m_SAM_pred, aes(x = SAM, y = predicted, colour = Age, 
-                                  group = Age, fill = Age)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(b) Males (n.s.)") + 
-  scale_colour_viridis_d() +
+## Build the plot
+p_m_age <- ggplot(m_SAM_pred, aes(x = age, y = predicted)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
+  geom_line(size = 1.1, col = male_col) +
+  labs(x = "Age, years", y = "P|Successful", title = "Males") + 
   ylim(c(0,1)) +
   theme_bw() +
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank())
-
-
+  theme(legend.position = c(0.15, 0.15),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        legend.key = element_blank())
 
 
 
@@ -489,33 +330,13 @@ f_SOI_glmm <- glmmTMB(breeding_success ~ age_s*avgSOI_prebreeding_s*boldness_s +
                  family = "binomial")
 
 summary(f_SOI_glmm)
+
+## Drop non-significant interactions
+f_SOI_glmm <- update(f_SOI_glmm, ~ age_s +  I(age_s^2) + avgSOI_prebreeding_s + 
+                          avgSOI_breeding_s + boldness_s + prevyear + (1|year/ring))
+
+summary(f_SOI_glmm)
 tab_model(f_SOI_glmm, show.stat = T)
-
-
-## Plot SOI breeding  x boldness
-f_SOI_pred <- data.frame(ggpredict(f_SOI_glmm, terms = c("boldness_s[-1.51, -0.067, 1.62]", "avgSOI_breeding_s[all]"))) %>% 
-  rename(SOI = group, boldness = x) 
-
-# Unscale SOI
-f_SOI_pred$SOI <- as.numeric(as.character(f_SOI_pred$SOI))
-f_SOI_pred$SOI <- (f_SOI_pred$SOI * sd(female_rs$avgSOI_breeding)) + mean(female_rs$avgSOI_breeding) 
-
-f_SOI_pred$boldness <- as.factor(f_SOI_pred$boldness)
-
-p_f_SOI <- ggplot(f_SOI_pred, aes(x = SOI, y = predicted, colour = boldness, 
-                       group = boldness, fill = boldness)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(c) Females (n.s.)") + 
-  scale_colour_manual(values = c("#FFC20A", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"), 
-                     name = "Boldness") +
-  scale_fill_manual(values = c("#FFE48F", "#FFC20A", "#A37C01"), labels = c("Shy", "Intermediate", "Bold"),
-                    name = "Boldness") +
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.15, 0.15),
-        legend.background = element_blank(),
-        legend.box.background = element_blank())
 
 
 #### MALES -------------------------------------------------------------------
@@ -529,43 +350,17 @@ m_SOI_glmm <- glmmTMB(breeding_success ~ age_s*avgSOI_prebreeding_s*boldness_s +
                  family = "binomial")
 
 summary(m_SOI_glmm)
+
+## Drop non-significant interactions
+m_SOI_glmm <- update(m_SOI_glmm, ~ age_s +  I(age_s^2) + avgSOI_prebreeding_s + 
+                       avgSOI_breeding_s + boldness_s + prevyear + (1|year/ring))
+
+
+summary(m_SOI_glmm)
 tab_model(m_SOI_glmm, show.stat = T)
 
 
-## Plot SOI breeding  x boldness
-m_SOI_pred <- data.frame(ggpredict(m_SOI_glmm, terms = c("boldness_s[-1.83, 0.56, 1.60]", "avgSOI_breeding_s[all]"))) %>% 
-  rename(SOI = group, boldness = x) 
-
-# Unscale SOI
-m_SOI_pred$SOI <- as.numeric(as.character(m_SOI_pred$SOI))
-m_SOI_pred$SOI <- (m_SOI_pred$SOI * sd(male_rs$avgSOI_breeding)) + mean(male_rs$avgSOI_breeding) 
-m_SOI_pred$SOI <- round(m_SOI_pred$SOI, digits = 2)
-
-#### Make some predictions
-predict_diffs.prop(m_SOI_pred, "boldness", -1.83, "SOI", 1, -0.05)
-predict_diffs.prop(m_SOI_pred, "boldness", 1.60, "SOI", 1, -0.05)
-
-
-#### Build the plot
-m_SOI_pred$boldness <- as.factor(m_SOI_pred$boldness)
-
-p_m_SOI <- ggplot(m_SOI_pred, aes(x = SOI, y = predicted, colour = boldness, 
-                                  group = boldness, fill = boldness)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Southern Oscillation Index (Breeding)", y = "P|Successful", title = "(d) Males") + 
-  scale_colour_manual(values = c("#2797FD", "#0262BA", "#01203D"), labels = c("Shy", "Intermediate", "Bold"), 
-                      name = "Boldness") +
-  scale_fill_manual(values = c("#90CAFE", "#0276DB", "#013E75"), labels = c("Shy", "Intermediate", "Bold"),
-                    name = "Boldness") +
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.15, 0.15),
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank())
-
-
-# FIGURE 4: individual breeding success ~ SAM/SOI ==================================
+# FIGURE SX: can do an age effect plot here if useful ==========================
 
 png("Figures/FIG4_individual_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
 ggpubr::ggarrange(p_f_SAM, p_m_SAM,
@@ -576,8 +371,140 @@ dev.off()
 
 
 
+
+### Population-level breeding success with climate -----------------------------
+
+# Calculate mean RS per year
+annual_rs <- waal_rs %>%
+  group_by(year, avgSAM_breeding, avgSOI_breeding) %>%
+  summarise(n_birds = n_distinct(ring),
+            mean_rs = mean(breeding_success, na.rm = T)) %>%
+  filter(n_birds > 3)
+
+# Get weighted overall mean
+annual_means <- waal_rs %>%
+  group_by(year) %>%
+  summarize(annual_rs = mean(breeding_success, na.rm = T),
+            n_inds = n())
+
+annual_means$weights <- annual_means$n_inds/sum(annual_means$n_inds)
+xm <- weighted.mean(annual_means$annual_rs, annual_means$weights)
+#[1] 0.7809899
+
+weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
+sqrt(weighted_var)
+
+# Breeding success as a function of climate variables
+RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding_s + avgSAM_prebreeding_s +
+                              avgSOI_breeding_s + avgSOI_prebreeding_s + (1|year/ring), 
+                            data = waal_rs, family = "binomial")
+
+tab_model(RS_climate_glmer, show.stat = T)
+
+## Plot results
+
+climate_pred <- data.frame(ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [all]"))) %>% 
+  rename(SAM = x) 
+
+ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [0,1]"))
+# avgSAM_breeding | Predicted |       95% CI
+# ------------------------------------------
+#   0 |      0.77 | [0.76, 0.79]
+#   1 |      0.79 | [0.77, 0.80]
+
+# SAM : 
+RS_sam_plot <- ggplot() + 
+  geom_point(data = annual_rs, aes(x = avgSAM_breeding, y = mean_rs, 
+                                   size = n_birds)) +
+  geom_ribbon(data = climate_pred,
+              aes(x = SAM, ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = "coral") +
+  geom_line(data = climate_pred, aes(x = SAM, y = predicted), size = 1.1, col = "red") +
+  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
+                                                  y = mean_rs, label = year),
+                            segment.color = "darkorange",
+                            min.segment.length = 0.1) +
+  labs(x = "Arithmetic mean Southern Annular Mode (January to April)",
+       y = "Population-level breeding success") +
+  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  theme_bw() + 
+  theme(legend.position = "none")
+
+
+# SOI : 
+RS_soi_plot <- ggplot() +
+  geom_point(data = annual_rs, aes(x = avgSOI_breeding, y = mean_rs, 
+                                   size = n_birds)) +
+  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_breeding, 
+                                                  y = mean_rs, label = year),
+                            segment.color = "darkorange",
+                            min.segment.length = 0.1) +
+  labs(x = "Arithmetic mean Southern Oscillation Index (January to April)",
+       y = "Population-level breeding success") +
+  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank())
+
+
+# FIGURE 3: breeding success ~ climate =========================================
+
+png("Figures/FIG3_RS_by_climate.png", width = 12, height = 6, units = "in", res = 300)
+ggpubr::ggarrange(RS_sam_plot, RS_soi_plot,
+                  ncol = 2, nrow = 1,
+                  widths = c(1, 0.92))
+dev.off()
+
+
+
+
+
+
 # APPENDIX ----------------------------------------------------------------
 
+
+
+
+## ALTERNATIVE - SAM focused
+f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s [all]"))) %>% 
+  rename(SAM = group) 
+f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
+f_SAM_pred$SAM <- as.numeric(as.character(f_SAM_pred$SAM))
+f_SAM_pred$SAM <- (f_SAM_pred$SAM*sd(female_rs$avgSAM_breeding)) + mean(female_rs$avgSAM_breeding)
+f_age_levels <- unique(f_SAM_pred$age)[as.numeric(round(quantile(1:length(unique(f_SAM_pred$age)), 
+                                                                 probs = c(0.10, 0.5, 0.90))))]
+
+f_SAM_pred %<>% 
+  filter(age %in% f_age_levels) %>% 
+  mutate(age = as.numeric(as.character(age))) %>% 
+  mutate(`Age` = case_when(age == min(age) ~ "Young (10 years)", 
+                           age == max(age) ~ "Old (44 years)", 
+                           TRUE ~ "Mid (27 years)"))
+
+f_SAM_pred$Age <- factor(f_SAM_pred$Age, levels = c("Young (10 years)", "Mid (27 years)", "Old (44 years)"))
+
+
+#### Make some predictions
+maxSAM <- max(f_SAM_pred$SAM)
+minSAM <- min(f_SAM_pred$SAM)
+
+predict_diffs.prop(f_SAM_pred, "Age", "Young (10 years)", "SAM", maxSAM, minSAM)
+predict_diffs.prop(f_SAM_pred, "Age", "Mid (27 years)", "SAM", maxSAM, minSAM)
+predict_diffs.prop(f_SAM_pred, "Age", "Old (44 years)", "SAM", maxSAM, minSAM)
+
+#### Build the plot
+p_f_SAM <- ggplot(f_SAM_pred, aes(x = SAM, y = predicted, colour = Age, 
+                                  group = Age, fill = Age)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
+  geom_line(size = 1.1) +
+  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(a) Females") + 
+  scale_colour_viridis_d() +
+  ylim(c(0,1)) +
+  theme_bw() +
+  theme(legend.position = c(0.85, 0.15),
+        legend.background = element_blank(),
+        legend.box.background = element_blank(),
+        legend.key = element_blank())
 
 
 ### What is the probability of breeding success given have tried to breed? -----
