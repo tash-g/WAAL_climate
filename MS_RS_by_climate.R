@@ -395,8 +395,8 @@ weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
 sqrt(weighted_var)
 
 # Breeding success as a function of climate variables
-RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding_s + avgSAM_prebreeding_s +
-                              avgSOI_breeding_s + avgSOI_prebreeding_s + (1|year/ring), 
+RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding + avgSAM_prebreeding +
+                              avgSOI_breeding + avgSOI_prebreeding + (1|year/ring), 
                             data = waal_rs, family = "binomial")
 
 tab_model(RS_climate_glmer, show.stat = T)
@@ -447,9 +447,9 @@ RS_soi_plot <- ggplot() +
         axis.title.y = element_blank())
 
 
-# FIGURE 3: breeding success ~ climate =========================================
+# FIGURE 6: breeding success ~ climate =========================================
 
-png("Figures/FIG3_RS_by_climate.png", width = 12, height = 6, units = "in", res = 300)
+png("Figures/FIG6_RS_by_climate.png", width = 12, height = 6, units = "in", res = 300)
 ggpubr::ggarrange(RS_sam_plot, RS_soi_plot,
                   ncol = 2, nrow = 1,
                   widths = c(1, 0.92))

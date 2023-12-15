@@ -110,6 +110,88 @@ ggpubr::ggarrange(raw_dist_plot, log_dist_plot,
 dev.off()
 
 
+## Relative search time vs distance --------------------------------------------
+
+search_dist_plot <- ggplot(allgps, aes(y = propARSvsTravel_hmm, x = totalpathdistance.km, col = sex)) +
+  geom_point() +
+  scale_colour_manual(values = c("dodgerblue", "orange"), name = "") +
+  theme_bw() + 
+  theme(axis.title = element_text(colour = "black", size = 14), 
+        axis.text = element_text(colour = "black", size = 12), 
+        strip.text = element_text(colour = "black", size = 14), 
+        legend.position = c(0.065, 0.95),
+        legend.key.size = unit(0.75, "cm"),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 12),
+        legend.box = "horizontal",
+        legend.background = element_rect(fill = "transparent")) +
+  labs(y = "Ratio search to travel", x = "Total path distance (km)") 
+
+propsearch_dist_plot <- ggplot(allgps, aes(y = propSearch_hmm, x = totalpathdistance.km, col = sex)) +
+  geom_point() +
+  scale_colour_manual(values = c("dodgerblue", "orange"), name = "") +
+  theme_bw() + 
+  theme(axis.title = element_text(colour = "black", size = 14), 
+        axis.text = element_text(colour = "black", size = 12), 
+        strip.text = element_text(colour = "black", size = 14), 
+        legend.position = c(0.065, 0.95),
+        legend.key.size = unit(0.75, "cm"),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 12),
+        legend.box = "horizontal",
+        legend.background = element_rect(fill = "transparent")) +
+  labs(y = "Proportion of trip in search", x = "Total path distance (km)") 
+
+png("Figures/search_vs_distances.png", width = 8, height = 8, units = "in", res = 300)
+ggpubr::ggarrange(search_dist_plot, propsearch_dist_plot,
+                  ncol = 1,
+                  align = "hv")
+dev.off()
+
+
+
+
+## Distance against climate ----------------------------------------------------
+
+soi_dist_plot <- ggplot(allgps, aes(y = maxdistance.km, x = SOIIndex, col = sex)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_colour_manual(values = c("dodgerblue", "orange"), name = "") +
+  theme_bw() + 
+  theme(axis.title = element_text(colour = "black", size = 14), 
+        axis.text = element_text(colour = "black", size = 12), 
+        strip.text = element_text(colour = "black", size = 14), 
+        legend.position = c(0.065, 0.95),
+        legend.key.size = unit(0.75, "cm"),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 12),
+        legend.box = "horizontal",
+        legend.background = element_rect(fill = "transparent")) +
+  labs(y = "Max foraging distance (km)", x = "Southern Oscillation Index") 
+
+sam_dist_plot <- ggplot(allgps, aes(y = maxdistance.km, x = SAMIndex, col = sex)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_colour_manual(values = c("dodgerblue", "orange"), name = "") +
+  theme_bw() + 
+  theme(axis.title = element_text(colour = "black", size = 14), 
+        axis.text = element_text(colour = "black", size = 12), 
+        strip.text = element_text(colour = "black", size = 14), 
+        legend.position = c(0.065, 0.95),
+        legend.key.size = unit(0.75, "cm"),
+        legend.key = element_blank(), 
+        legend.text = element_text(size = 12),
+        legend.box = "horizontal",
+        legend.background = element_rect(fill = "transparent")) +
+  labs(y = "Max foraging distance (km)", x = "Southern Annular Mode")
+
+png("Figures/sam_soi_distance.png", width = 8, height = 8, units = "in", res = 300)
+ggpubr::ggarrange(soi_dist_plot, sam_dist_plot,
+                  ncol = 1,
+                  align = "hv")
+dev.off()
+
+
 # MODEL FITTING ================================================================
 
 load("Data_outputs/foraging_data_climate_analyses_M.RData")
@@ -617,9 +699,7 @@ min_boldness.f <- min(f_landings_soi.df$boldness)
 max_boldness.f <- max(f_landings_soi.df$boldness)
 
 mean(subset(f_landings_soi.df, boldness == min_boldness.f)$predicted)
-
-predict_diffs(f_landings_soi.df, "boldness", min_boldness.f, "SOI", 0, 1)
-predict_diffs(f_landings_soi.df, "boldness", max_boldness.f, "SOI", 0, 1)
+mean(subset(f_landings_soi.df, boldness == max_boldness.f)$predicted)
 
 #
 
