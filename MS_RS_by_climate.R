@@ -1,8 +1,7 @@
 # -------------------------------------
 # Script: RS_by_climate.R
-# Author: Dr Natasha Gillies
-# Purpose: Lookg at variation in reproductive success with climate indices
-# Notes: Based on work by Dr Jack Thorley
+# Author: Dr Natasha Gillies, Dr Jack Thorley
+# Purpose: Looking at variation in reproductive success with climate indices
 # Date: 2023-09-26
 # -------------------------------------
 
@@ -456,91 +455,6 @@ ggpubr::ggarrange(RS_sam_plot, RS_soi_plot,
 dev.off()
 
 
-
-
-
-
-# APPENDIX ----------------------------------------------------------------
-
-
-
-
-## ALTERNATIVE - SAM focused
-f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]", "avgSAM_breeding_s [all]"))) %>% 
-  rename(SAM = group) 
-f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
-f_SAM_pred$SAM <- as.numeric(as.character(f_SAM_pred$SAM))
-f_SAM_pred$SAM <- (f_SAM_pred$SAM*sd(female_rs$avgSAM_breeding)) + mean(female_rs$avgSAM_breeding)
-f_age_levels <- unique(f_SAM_pred$age)[as.numeric(round(quantile(1:length(unique(f_SAM_pred$age)), 
-                                                                 probs = c(0.10, 0.5, 0.90))))]
-
-f_SAM_pred %<>% 
-  filter(age %in% f_age_levels) %>% 
-  mutate(age = as.numeric(as.character(age))) %>% 
-  mutate(`Age` = case_when(age == min(age) ~ "Young (10 years)", 
-                           age == max(age) ~ "Old (44 years)", 
-                           TRUE ~ "Mid (27 years)"))
-
-f_SAM_pred$Age <- factor(f_SAM_pred$Age, levels = c("Young (10 years)", "Mid (27 years)", "Old (44 years)"))
-
-
-#### Make some predictions
-maxSAM <- max(f_SAM_pred$SAM)
-minSAM <- min(f_SAM_pred$SAM)
-
-predict_diffs.prop(f_SAM_pred, "Age", "Young (10 years)", "SAM", maxSAM, minSAM)
-predict_diffs.prop(f_SAM_pred, "Age", "Mid (27 years)", "SAM", maxSAM, minSAM)
-predict_diffs.prop(f_SAM_pred, "Age", "Old (44 years)", "SAM", maxSAM, minSAM)
-
-#### Build the plot
-p_f_SAM <- ggplot(f_SAM_pred, aes(x = SAM, y = predicted, colour = Age, 
-                                  group = Age, fill = Age)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1, colour = NA) +
-  geom_line(size = 1.1) +
-  labs(x = "Southern Annular Mode (Breeding)", y = "P|Successful", title = "(a) Females") + 
-  scale_colour_viridis_d() +
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.85, 0.15),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        legend.key = element_blank())
-
-
-### What is the probability of breeding success given have tried to breed? -----
-
-## Females : 
-f_RS_glmm <- glmmTMB(breeding_success ~ age_s*boldness_s + I(age_s^2)*boldness_s + 
-                       AFR_s*boldness_s + I(AFR_s^2)*boldness_BLUP_mean + prevyear*boldness_s +                
-                       (1|ring) + (1|year), 
-                     data =  female_rs,
-                     family = "binomial")
-summary(f_RS_glmm)
-
-f_RS_boldness <- ggpredict(f_RS_glmm, terms = c("boldness_s"))
-p_f_RS_boldness <- plot(f_RS_boldness, show.title = FALSE) + 
-  scale_y_continuous(limits = c(0,1))  + 
-  theme_bw + 
-  labs(x = "Boldness BLUP", y = "P| Successful")
-
-f_RS_age <- ggpredict(f_RS_glmm, terms = c("age_s [all]", "boldness_s"))
-p_f_RS_age <- plot(f_RS_age, show.title = FALSE, show.legend = FALSE) + 
-  scale_y_continuous(limits = c(0,1))  + 
-  theme_bw() +
-  labs(x = "Age (years, scaled)", y = "P| Successful")
-
-f_RS_prevyear <- ggpredict(f_RS_glmm, terms = c("prevyear [all]", "boldness_s"))
-p_f_RS_prevyear <- plot(f_RS_prevyear, show.title = FALSE) + 
-  scale_y_continuous(limits = c(0,1))  + 
-  scale_x_continuous(breaks = c(1,2,3), labels = c("DNB", "FB", "SB")) +
-  theme_bw() +
-  labs(x = "Reproduction (t - 1)", y = "P| Successful")
-
-f_RS_AFR <- ggpredict(f_RS_glmm, terms = c("AFR_s", "boldness_s"))
-p_f_RS_AFR <- plot(f_RS_AFR, show.title = FALSE, show.legend = FALSE) + 
-  scale_y_continuous(limits = c(0,1))  + 
-  theme_jt + 
-  labs(x = "AFR (years, scaled", y = "P| Successful")
 
 
 

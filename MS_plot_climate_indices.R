@@ -1,7 +1,7 @@
 # -------------------------------------
 # Script: plot_climate_indices.R
-# Author: Dr Jack Thorley; edited by Dr Natasha Gillies
-# Purpose: Visualise variation in SAM, SOI, IOD
+# Author: Dr Jack Thorley; Dr Natasha Gillies
+# Purpose: Visualise variation in SAM, SOI
 # Notes: 
 # Date: 2023-10-09
 # -------------------------------------
@@ -98,31 +98,6 @@ dev.off()
 
 
 
-
-
-
-
-# Indian Ocean Dipole ==========================================================
-
-# Load dataset
-load("Data_original/IOD_monthly.RData")
-
-# Average IOD by year
-year.avg_IOD <- iod %>% 
-  group_by(Year) %>% 
-  summarise(meanIOD = mean(IODIndex), 
-            sdIOD = sd(IODIndex)) %>% 
-  data.frame()
-
-iod_plot <- ggplot(year.avg_IOD, aes(x = Year, y = meanIOD)) +
-  geom_hline(yintercept = 0, col = "darkgrey", linetype = 2) +
-  geom_ribbon(aes(ymin = meanIOD - sdIOD, ymax = meanIOD + sdIOD), alpha = 0.2, fill = "dodgerblue") +
-  geom_smooth(method = "lm", col = "red", se = T, fill = "red", alpha = 0.2, size = 1.1) +
-  geom_path(size = 1.1) + 
-  labs(x = "Year", title = "IOD") + 
-  scale_x_continuous(breaks = seq(1960, 2020, 5), labels = seq(1960, 2020, 5)) +
-  climate_theme +
-  theme(axis.text.y = element_blank()) 
 
 
 
