@@ -80,7 +80,7 @@ predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) 
 # PREPARE THE DATASETS =========================================================
 
 # Load the fitness data
-waal_rs <- read.csv("Data_original/WAAL_RS_glmmTMBdata.csv", header = TRUE)
+waal_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_2010-2020.csv", header = TRUE)
 
 ## Remove individuals reproducing before 7 (probably erroneous) or those with no age info
 waal_rs %<>% 
@@ -96,7 +96,7 @@ waal_rs %<>%
 
 ## Add a variable for the previous year's reproductive attempt
 waal_rs %<>%  
-  group_by(Metalring) %>% 
+  group_by(id) %>% 
   mutate(prevyear = case_when(lag(breeding_success) == "0" ~ "failedrep", 
                               lag(breeding_success) == "1" ~ "successfulrep", 
                               TRUE ~ "no attempt")) %>% 
@@ -180,7 +180,7 @@ ggplot(waal_rs %>%
 
 ### Distribution of AFR
 ggplot(waal_rs %>% 
-         group_by(Metalring) %>% 
+         group_by(id) %>% 
          slice(1), aes(x = AFR)) + 
   geom_histogram(binwidth = 1) + 
   facet_wrap(~ Sex)
@@ -196,12 +196,12 @@ ggplot(waal_rs,
 # Individual level effects of climate on reproductive success ------------------
 
 ### Isolate variables and rename
-waal_rs %<>% dplyr::select(c("Metalring", "Sex", "year", "ReproCode", "Age", "AFR", 
+waal_rs %<>% dplyr::select(c("id", "Sex", "year", "Age", "AFR", 
                              "boldness_BLUP_mean", "attempted_breeding", "breeding_success",
                              "prevyear",  "avgSOI_breeding", "avgSAM_breeding",    
                              "avgIOD_breeding", "avgSOI_prebreeding", "avgSAM_prebreeding",
                              "avgIOD_prebreeding")) %>%
-  rename(ring = Metalring) 
+  rename(ring = id) 
 
 
 # Separate males and females

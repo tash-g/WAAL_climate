@@ -29,15 +29,12 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 # Load the data ----------------------------------------------------------------
 
-gps_waal <- read.csv("Data_original/WAAL_GPS_1990-2020.csv")
+gps_waal <- read.csv("Data_inputs/WAAL_gpsLocations_1990-2020.csv")
 gps_waal <- subset(gps_waal, !is.na(DateTime))
 gps_waal$DateTime <- as.POSIXct(gps_waal$DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
 
 # Isolate period 2010 - 2020
 gps_waal <- subset(gps_waal, Year >= 2010)
-
-# Subset to relevant columns
-gps_waal <- gps_waal[,c("Ring", "DateTime", "Sex", "Year", "Longitude", "Latitude"),]
 
 # Get months
 gps_waal$month <- as.numeric(format(gps_waal$DateTime, "%m"))
