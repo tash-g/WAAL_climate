@@ -371,7 +371,7 @@ dev.off()
 
 
 
-### Population-level breeding success with climate -----------------------------
+# Population-level breeding success with climate -------------------------------
 
 # Calculate mean RS per year
 annual_rs <- waal_rs %>%
@@ -413,15 +413,19 @@ ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [0,1]"))
 
 # SAM : 
 RS_sam_plot <- ggplot() + 
+  geom_line(data = climate_pred, aes(x = SAM, y = predicted), linewidth = 1.1, col = "red") +
   geom_point(data = annual_rs, aes(x = avgSAM_breeding, y = mean_rs, 
                                    size = n_birds)) +
   geom_ribbon(data = climate_pred,
               aes(x = SAM, ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = "coral") +
-  geom_line(data = climate_pred, aes(x = SAM, y = predicted), size = 1.1, col = "red") +
+  
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
-                                                  y = mean_rs, label = year),
+                                                  y = mean_rs, 
+                                                  fill = as.numeric(year),
+                                                  label = year),
                             segment.color = "darkorange",
                             min.segment.length = 0.1) +
+  scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Annular Mode (January to April)",
        y = "Population-level breeding success") +
   scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
@@ -434,9 +438,12 @@ RS_soi_plot <- ggplot() +
   geom_point(data = annual_rs, aes(x = avgSOI_breeding, y = mean_rs, 
                                    size = n_birds)) +
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_breeding, 
-                                                  y = mean_rs, label = year),
+                                                  y = mean_rs, 
+                                                  label = year,
+                                                  fill = as.numeric(year)),
                             segment.color = "darkorange",
                             min.segment.length = 0.1) +
+  scale_fill_gradient(high = "#148A41", low = "#BAECCD") +
   labs(x = "Arithmetic mean Southern Oscillation Index (January to April)",
        y = "Population-level breeding success") +
   scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
