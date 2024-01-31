@@ -29,7 +29,7 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 # Load the data ----------------------------------------------------------------
 
-gps_waal <- read.csv("Data_inputs/WAAL_gpsLocations_1990-2020.csv")
+gps_waal <- read.csv("Data_inputs/WAAL_gpsLocations_1989-2020.csv")
 gps_waal <- subset(gps_waal, !is.na(DateTime))
 gps_waal$DateTime <- as.POSIXct(gps_waal$DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
 
@@ -306,7 +306,7 @@ for (i in 1:length(UDs)) {
 kdareas_annual <- do.call("rbind", kdareas_list)
 
 #save(kdareas_annual, file = "annual_kernels.RData")
-load("annual_kernels.RData")
+load("Data_outputs/annual_kernels.RData")
 
 
 # Create the plots -------------------------------------------------------------
@@ -324,19 +324,19 @@ annual_kernelPlot_F <-
             label_axes = list(top = "E", left = "N", bottom = "E", right = "N")) +
   # Add the GPS tracks
   geom_path(aes(x = Longitude, y = Latitude, group = Ring), 
-            alpha = 0.25, size = 1, col = "azure3",
+            alpha = 0.35, size = 0.25, col = "black",
             dat = subset(gps_waal.df, Sex == "F")) +
   # Plot the kernels
   geom_polygon(aes(x = long, y = lat, group = group), 
-                         size = 0.25, fill = female_col, col = "#ff800a",
+                         size = 0.8, fill = female_col, col = "#ff800a",
                          dat = subset(annual_F, UD == 50),
                          alpha = .3) +
   geom_polygon(aes(x = long, y = lat, group = group), 
-                         size = 0.25, fill = female_col, col = "#ff800a",
+                         size = 0.8, fill = female_col, col = "#ff800a",
                          dat = subset(annual_F, UD == 75),
                          alpha = .3) +
   geom_polygon(aes(x = long, y = lat, group = group), 
-                         size = 0.25, fill = female_col, col = "#ff800a",
+                         size = 0.8, fill = female_col, col = "#ff800a",
                          dat = subset(annual_F, UD == 90),
                          alpha = .3) +
   # Add point for Crozet
@@ -372,19 +372,19 @@ annual_kernelPlot_M <-
            label_axes = list(top = "E", left = "N", bottom = "E", right = "N")) +
   # Add the GPS tracks
   geom_path(aes(x = Longitude, y = Latitude, group = Ring), 
-            alpha = 0.25, size = 1, col = "azure3",
+            alpha = 0.35, size = 0.25, col = "black",
             dat = subset(gps_waal.df, Sex == "M")) +
   # Plot the kernels
   geom_polygon(aes(x = long, y = lat, group = group), 
-               size = 0.25, fill = male_col, col = "#2b0cdc",
+               size = 0.8, fill = male_col, col = "#2b0cdc",
                dat = subset(annual_M, UD == 50),
                alpha = .3) +
   geom_polygon(aes(x = long, y = lat, group = group), 
-               size = 0.25, fill = male_col, col = "#2b0cdc",
+               size = 0.8, fill = male_col, col = "#2b0cdc",
                dat = subset(annual_M, UD == 75),
                alpha = .3) +
   geom_polygon(aes(x = long, y = lat, group = group), 
-               size = 0.25, fill = male_col, col = "#2b0cdc",
+               size = 0.8, fill = male_col, col = "#2b0cdc",
                dat = subset(annual_M, UD == 90),
                alpha = .3) +
   # Add point for Crozet

@@ -79,7 +79,20 @@ predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) 
 # PREPARE THE DATASETS =========================================================
 
 # Load the fitness data
-waal_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_2010-2020.csv", header = TRUE)
+waal_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_1965-2020.csv", header = TRUE)
+ind_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_2010-2020.csv")
+
+temp <- read.csv("Data_inputs/WAAL_foraging_2010-2020_F.csv") 
+temp <- rbind(temp, read.csv("Data_inputs/WAAL_foraging_2010-2020_M.csv"))
+
+temp <- temp %>% select(c("id", "sex", "Year", "Age", 
+                             "boldness", "attempted_breeding", "breeding_success",
+                             "prevyear")) %>%
+                          rename(year = Year) %>%
+                          filter(!is.na(breeding_success)) %>%
+                          distinct()
+
+write.csv(temp, "Data_inputs/WAAL_breedingSuccess_2010-2020.csv", row.names = F)
 
 ## Remove individuals reproducing before 7 (probably erroneous) or those with no age info
 waal_rs %<>% 
@@ -106,6 +119,9 @@ waal_rs %<>%
 # Change formatting of data and extract relevant variables
 waal_rs$year <- as.factor(waal_rs$year)
 waal_rs$prevyear <- factor(waal_rs$prevyear, levels = c("no attempt", "failedrep", "successfulrep"))
+
+ind_rs$year <- as.factor(ind_rs$year)
+ind_rs$prevyear <- factor(ind_rs$prevyear, levels = c("no attempt", "failedrep", "successfulrep"))
 
 
 ## Process the climate data ----------------------------------------------------
@@ -157,6 +173,12 @@ waal_rs <- climate_breeding %>%
   right_join(waal_rs) %>% 
   data.frame()
 
+ind_rs <- climate_breeding %>% 
+  left_join(climate_prebreeding) %>% 
+  right_join(ind_rs) %>% 
+  data.frame()
+
+
 
 # VISUALISE THE DATA ===========================================================
 
@@ -195,12 +217,12 @@ ggplot(waal_rs,
 # Individual level effects of climate on reproductive success ------------------
 
 ### Isolate variables and rename
-waal_rs %<>% dplyr::select(c("id", "Sex", "year", "Age", "AFR", 
+waal_rs %<>% dplyr::select(c("id", "Sex", "year", "Age", "AFR",
                              "boldness_BLUP_mean", "attempted_breeding", "breeding_success",
-                             "prevyear",  "avgSOI_breeding", "avgSAM_breeding",    
+                             "prevyear",  "avgSOI_breeding", "avgSAM_breeding",
                              "avgIOD_breeding", "avgSOI_prebreeding", "avgSAM_prebreeding",
                              "avgIOD_prebreeding")) %>%
-  rename(ring = id) 
+  rename(ring = id)
 
 
 # Separate males and females
@@ -208,7 +230,7 @@ female_rs <- waal_rs %>% filter(Sex == "F" & !is.na(boldness_BLUP_mean))
 male_rs <- waal_rs %>% filter(Sex == "M" & !is.na(boldness_BLUP_mean))
 
 ### Standardise the variables
-female_rs %<>% 
+female_rs %<>%
   mutate(age_s = scale(Age),
          AFR_s = scale(AFR),
          boldness_s = scale(boldness_BLUP_mean),
@@ -217,9 +239,10 @@ female_rs %<>%
          avgSOI_breeding_s = scale(avgSOI_breeding),
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
-         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) 
+         avgIOD_prebreeding_s = scale(avgIOD_prebreeding),
+         year = as.numeric(year))
 
-male_rs %<>% 
+male_rs %<>%
   mutate(age_s = scale(Age),
          AFR_s = scale(AFR),
          boldness_s = scale(boldness_BLUP_mean),
@@ -228,7 +251,9 @@ male_rs %<>%
          avgSOI_breeding_s = scale(avgSOI_breeding),
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
-         avgIOD_prebreeding_s = scale(avgIOD_prebreeding)) 
+         avgIOD_prebreeding_s = scale(avgIOD_prebreeding),
+         year = as.numeric(year))
+
 
 
 ## How does the probability of breeding success change with climate ------------
@@ -236,29 +261,32 @@ male_rs %<>%
 ### SAM ========================================================================
 
 #### FEMALES -------------------------------------------------------------------
-f_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +   
+
+f_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +
                    I(age_s^2)*avgSAM_prebreeding_s*boldness_s +
-                   age_s*avgSAM_breeding_s*boldness_s + 
+                   age_s*avgSAM_breeding_s*boldness_s +
                    I(age_s^2)*avgSAM_breeding_s*boldness_s +
-                   prevyear +
-                   (1|year/ring), 
-                 data =  female_rs, 
+                   prevyear + year +
+                   (1|ring),
+                 data =  female_rs,
                  family = "binomial")
 
 summary(f_SAM_glmm)
 
 ## Remove non-significant random effects
 f_SAM_glmm <- update(f_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
-                           avgSAM_breeding_s + boldness_s + prevyear +
-                           I(age_s^2):avgSAM_breeding_s +
-                           (1|year/ring))
-
-summary(f_SAM_glmm)
+                           avgSAM_breeding_s + boldness_s + prevyear + year + 
+                           I(age_s^2):avgSAM_breeding_s + (1|ring))
 
 f_SAM_glmm <- update(f_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
-                       avgSAM_breeding_s + boldness_s + prevyear + (1|year/ring))
+                       avgSAM_breeding_s + boldness_s + prevyear + year + (1|ring))
 
+summary(f_SAM_glmm)
 tab_model(f_SAM_glmm, show.stat = T)
+
+
+## Get residuals
+female_rs$residuals <- resid(f_SAM_glmm)
 
 f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]")))
 f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
@@ -277,22 +305,22 @@ p_f_age <- ggplot(f_SAM_pred, aes(x = age, y = predicted)) +
 
 
 
-
 #### MALES ---------------------------------------------------------------------
-m_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +   
-                   I(age_s^2)*avgSAM_prebreeding_s*boldness_s +
-                   age_s*avgSAM_breeding_s*boldness_s + 
-                   I(age_s^2)*avgSAM_breeding_s*boldness_s +
-                   prevyear + 
-                   (1|year/ring), 
-                 data =  male_rs, 
-                 family = "binomial")
+m_SAM_glmm <- glmmTMB(breeding_success ~ age_s*avgSAM_prebreeding_s*boldness_s +
+                        I(age_s^2)*avgSAM_prebreeding_s*boldness_s +
+                        age_s*avgSAM_breeding_s*boldness_s +
+                        I(age_s^2)*avgSAM_breeding_s*boldness_s +
+                        prevyear + year +
+                        (1|ring),
+                      data =  male_rs,
+                      family = "binomial")
 
 summary(m_SAM_glmm)
 
 ## Drop non-significant interactions
 m_SAM_glmm <- update(m_SAM_glmm, ~ age_s + I(age_s^2) + avgSAM_prebreeding_s +
-                       avgSAM_breeding_s + boldness_s + prevyear + (1|year/ring))
+                       avgSAM_breeding_s + boldness_s + prevyear + year + 
+                       (1|ring))
 
 summary(m_SAM_glmm)
 tab_model(m_SAM_glmm, show.stat = T)
@@ -323,8 +351,8 @@ f_SOI_glmm <- glmmTMB(breeding_success ~ age_s*avgSOI_prebreeding_s*boldness_s +
                    I(age_s^2)*avgSOI_prebreeding_s*boldness_s +
                    age_s*avgSOI_breeding_s*boldness_s + 
                    I(age_s^2)*avgSOI_breeding_s*boldness_s +
-                   prevyear +
-                   (1|year/ring), 
+                   prevyear + year +
+                   (1|ring), 
                  data =  female_rs, 
                  family = "binomial")
 
@@ -332,7 +360,8 @@ summary(f_SOI_glmm)
 
 ## Drop non-significant interactions
 f_SOI_glmm <- update(f_SOI_glmm, ~ age_s +  I(age_s^2) + avgSOI_prebreeding_s + 
-                          avgSOI_breeding_s + boldness_s + prevyear + (1|year/ring))
+                          avgSOI_breeding_s + boldness_s + prevyear + year +
+                          (1|ring))
 
 summary(f_SOI_glmm)
 tab_model(f_SOI_glmm, show.stat = T)
@@ -343,8 +372,8 @@ m_SOI_glmm <- glmmTMB(breeding_success ~ age_s*avgSOI_prebreeding_s*boldness_s +
                    I(age_s^2)*avgSOI_prebreeding_s*boldness_s +
                    age_s*avgSOI_breeding_s*boldness_s + 
                    I(age_s^2)*avgSOI_breeding_s*boldness_s +
-                   prevyear +
-                   (1|year/ring), 
+                   prevyear + year +
+                   (1|ring), 
                  data =  male_rs, 
                  family = "binomial")
 
@@ -352,8 +381,8 @@ summary(m_SOI_glmm)
 
 ## Drop non-significant interactions
 m_SOI_glmm <- update(m_SOI_glmm, ~ age_s +  I(age_s^2) + avgSOI_prebreeding_s + 
-                       avgSOI_breeding_s + boldness_s + prevyear + (1|year/ring))
-
+                       avgSOI_breeding_s + boldness_s + prevyear + year +
+                       (1|ring))
 
 summary(m_SOI_glmm)
 tab_model(m_SOI_glmm, show.stat = T)
@@ -361,21 +390,18 @@ tab_model(m_SOI_glmm, show.stat = T)
 
 # FIGURE SX: can do an age effect plot here if useful ==========================
 
-png("Figures/FIG4_individual_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
 ggpubr::ggarrange(p_f_SAM, p_m_SAM,
                   p_f_SOI, p_m_SOI,
                   ncol = 2, nrow = 2,
                   widths = c(1, 0.92))
-dev.off()
 
 
 
-
-# Population-level breeding success with climate -------------------------------
+# Visualise population-level breeding success with climate ---------------------
 
 # Calculate mean RS per year
 annual_rs <- waal_rs %>%
-  group_by(year, avgSAM_breeding, avgSOI_breeding) %>%
+  group_by(year, avgSAM_breeding, avgSAM_prebreeding, avgSOI_prebreeding, avgSOI_breeding) %>%
   summarise(n_birds = n_distinct(ring),
             mean_rs = mean(breeding_success, na.rm = T)) %>%
   filter(n_birds > 3)
@@ -393,32 +419,11 @@ xm <- weighted.mean(annual_means$annual_rs, annual_means$weights)
 weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
 sqrt(weighted_var)
 
-# Breeding success as a function of climate variables
-RS_climate_glmer <- glmmTMB(breeding_success ~ avgSAM_breeding + avgSAM_prebreeding +
-                              avgSOI_breeding + avgSOI_prebreeding + (1|year/ring), 
-                            data = waal_rs, family = "binomial")
-
-tab_model(RS_climate_glmer, show.stat = T)
-
-## Plot results
-
-climate_pred <- data.frame(ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [all]"))) %>% 
-  rename(SAM = x) 
-
-ggpredict(RS_climate_glmer, terms = c("avgSAM_breeding [0,1]"))
-# avgSAM_breeding | Predicted |       95% CI
-# ------------------------------------------
-#   0 |      0.77 | [0.76, 0.79]
-#   1 |      0.79 | [0.77, 0.80]
 
 # SAM : 
-RS_sam_plot <- ggplot() + 
-  geom_line(data = climate_pred, aes(x = SAM, y = predicted), linewidth = 1.1, col = "red") +
+RS_sam_breeding.plot <- ggplot() + 
   geom_point(data = annual_rs, aes(x = avgSAM_breeding, y = mean_rs, 
                                    size = n_birds)) +
-  geom_ribbon(data = climate_pred,
-              aes(x = SAM, ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = "coral") +
-  
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
                                                   y = mean_rs, 
                                                   fill = as.numeric(year),
@@ -427,14 +432,33 @@ RS_sam_plot <- ggplot() +
                             min.segment.length = 0.1) +
   scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Annular Mode (January to April)",
-       y = "Population-level breeding success") +
+       y = "Population-level mean breeding success") +
   scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none")
 
+RS_sam_prebreeding.plot <- ggplot() + 
+  geom_point(data = annual_rs, aes(x = avgSAM_prebreeding, y = mean_rs, 
+                                   size = n_birds)) +
+  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSAM_breeding, 
+                                                  y = mean_rs, 
+                                                  fill = as.numeric(year),
+                                                  label = year),
+                            segment.color = "darkorange",
+                            min.segment.length = 0.1) +
+  scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
+  labs(x = "Arithmetic mean Southern Annular Mode (September to November)",
+       y = "Population-level mean breeding success") +
+  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  theme_bw() + 
+  theme(legend.position = "none",
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank())
+
+
 
 # SOI : 
-RS_soi_plot <- ggplot() +
+RS_soi_breeding.plot <- ggplot() +
   geom_point(data = annual_rs, aes(x = avgSOI_breeding, y = mean_rs, 
                                    size = n_birds)) +
   ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_breeding, 
@@ -443,8 +467,26 @@ RS_soi_plot <- ggplot() +
                                                   fill = as.numeric(year)),
                             segment.color = "darkorange",
                             min.segment.length = 0.1) +
-  scale_fill_gradient(high = "#148A41", low = "#BAECCD") +
+  scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Oscillation Index (January to April)",
+       y = "Population-level breeding success") +
+  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  theme_bw() + 
+  theme(legend.position = "none")
+
+
+
+RS_soi_prebreeding.plot <- ggplot() +
+  geom_point(data = annual_rs, aes(x = avgSOI_prebreeding, y = mean_rs, 
+                                   size = n_birds)) +
+  ggrepel::geom_label_repel(data = annual_rs, aes(x = avgSOI_breeding, 
+                                                  y = mean_rs, 
+                                                  label = year,
+                                                  fill = as.numeric(year)),
+                            segment.color = "darkorange",
+                            min.segment.length = 0.1) +
+  scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
+  labs(x = "Arithmetic mean Southern Oscillation Index (September to November)",
        y = "Population-level breeding success") +
   scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
@@ -455,9 +497,10 @@ RS_soi_plot <- ggplot() +
 
 # FIGURE 6: breeding success ~ climate =========================================
 
-png("Figures/FIG6_RS_by_climate.png", width = 12, height = 6, units = "in", res = 300)
-ggpubr::ggarrange(RS_sam_plot, RS_soi_plot,
-                  ncol = 2, nrow = 1,
+png("Figures/FIG6_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
+ggpubr::ggarrange(RS_sam_breeding.plot, RS_sam_prebreeding.plot,
+                  RS_soi_breeding.plot, RS_soi_prebreeding.plot,
+                  ncol = 2, nrow = 2,
                   widths = c(1, 0.92))
 dev.off()
 
