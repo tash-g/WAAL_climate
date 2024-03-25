@@ -67,7 +67,7 @@ predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) 
 
 
 
-# VISUALISATION ================================================================
+# VISUALISE DATA ===============================================================
 
 femalegps <- read.csv("Data_inputs/WAAL_foraging_2010-2020_F.csv")
 malegps <- read.csv("Data_inputs/WAAL_foraging_2010-2020_M.csv")
@@ -102,12 +102,6 @@ log_dist_plot <- ggplot(allgps, aes(x = logmaxdistance.km, y = logtotalpathdista
         legend.position = "none") +
   labs(x = "Log maximum path distance (km)", y = "Log total path distance (km)") 
 
-png("Figures/distances.png", width = 8, height = 8, units = "in", res = 300)
-ggpubr::ggarrange(raw_dist_plot, log_dist_plot,
-                  ncol = 1,
-                  align = "hv")
-dev.off()
-
 
 ## Relative search time vs distance --------------------------------------------
 
@@ -140,14 +134,6 @@ propsearch_dist_plot <- ggplot(allgps, aes(y = propSearch_hmm, x = totalpathdist
         legend.box = "horizontal",
         legend.background = element_rect(fill = "transparent")) +
   labs(y = "Proportion of trip in search", x = "Total path distance (km)") 
-
-png("Figures/search_vs_distances.png", width = 8, height = 8, units = "in", res = 300)
-ggpubr::ggarrange(search_dist_plot, propsearch_dist_plot,
-                  ncol = 1,
-                  align = "hv")
-dev.off()
-
-
 
 
 ## Distance against climate ----------------------------------------------------
@@ -236,24 +222,6 @@ male_mod <- malegps[,c("id", "Year", "Age", "DeploymentID", "sex", "totalpathdis
                        "propARSvsTravel_hmm", "total_landings_hmm", "boldness",
                        "SAMIndex", "IODIndex", "SOIIndex", "breeding_success",
                        "attempted_breeding", "distPerDay", "tripduration.days")]
-
-## Visualise variables ---------------------------------------------------------
-
-# Histograms
-par(mfrow = c(3,2))
-hist(female_mod$total_landings_hmm, main = "Female landings"); 
-hist(male_mod$total_landings_hmm, main = "Male landings");
-hist(female_mod$travSearch_ratio, main = "Female travel:search"); 
-hist(male_mod$travSearch_ratio, main = "Male travel:search"); 
-hist(female_mod$logmaxdistance.km, main = "Female max distance"); 
-hist(male_mod$logmaxdistance.km, main = "Male max distance")
-
-# Correlations
-car::scatterplotMatrix(~total_landings_hmm + travSearch_ratio + logmaxdistance.km, 
-                       data = female_mod)
-
-car::scatterplotMatrix(~total_landings_hmm + travSearch_ratio + logmaxdistance.km, 
-                       data = male_mod)
 
 
 ## Fit models using glmmTMB ----------------------------------------------------
@@ -451,6 +419,7 @@ tab_model(m_landings.SOI, show.stat = TRUE)
 
 
 # MODEL PLOTTING & PREDICTIONS #################################################
+
 female_col <- "#FFC20A"
 female_fill <- "#f7dc8b"
 male_col <- "#0C7BDC"

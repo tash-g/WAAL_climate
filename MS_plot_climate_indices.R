@@ -46,6 +46,9 @@ year.avg_sam <- sam %>%
             sdSAM = sd(SAMIndex)) %>% 
   data.frame()
 
+# Slope of effect
+summary(lm(meanSAM ~ Year, data = year.avg_sam))
+
 sam_plot <- ggplot(year.avg_sam, aes(x = Year, y = meanSAM)) +
   geom_hline(yintercept = 0, col = "darkgrey", linetype = 2) +
   geom_ribbon(aes(ymin = meanSAM - sdSAM, ymax = meanSAM + sdSAM), alpha = 0.2, fill = "dodgerblue") +
@@ -71,6 +74,10 @@ year.avg_SOI <- soi %>%
   summarise(meanSOI = mean(SOIIndex), 
             sdSOI = sd(SOIIndex)) %>% 
   data.frame()
+
+# Slope of effect
+summary(lm(meanSOI ~ Year, data = year.avg_SOI))
+
 
 soi_plot <- ggplot(year.avg_SOI, aes(x = Year, y = meanSOI)) +
   geom_hline(yintercept = 0, col = "darkgrey", linetype = 2) +

@@ -6,10 +6,9 @@ This repository contains scripts and data to recreate the main results and figur
 ## Scripts
 A short description of each script is given below.
 
-- **MS_APPENDIX_personality.R** Plots the personality distributions and calculates quantiles.
 - **MS_RS_by_climate.R** Contains analyses to examine the effect of climate variation on reproductive success. 
 - **MS_foraging_by_climate_indices.R** Contains analyses to examine the effect of climate variation on foraging behaviour.
-- **MS_kernel_map.R** Calculates distribution kernels and plots them.
+- **MS_kernel_map.R** Calculates distribution kernels and plots them. Note this code depends on sp packages, which are not supported by recent R distributions.
 - **MS_plot_climate_indices.R** Plots changes in climate indices over time. 
 
  

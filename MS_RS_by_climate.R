@@ -37,62 +37,11 @@ male_col <- "#0C7BDC"
 male_fill <- "#91c1eb"
 
 
-# Function
-## Calculate differences for different groups
-predict_diffs <- function(dataset, group, group_val, val_name, val1, val2) {
-  
-  if (!is.na(group) && !is.na(group_val)) {
-    mean_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted -
-                    subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) /
-      subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted * 100 
-  
-  } else {
-    mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
-                    subset(dataset, dataset[[val_name]] %in% val2)$predicted) /
-      subset(dataset, dataset[[val_name]] %in% val1)$predicted * 100 
-    
-  }
-  
-  return(mean_pred)
-}
-
-
-## Predict changes for different groups for proportional variables
-predict_diffs.prop <- function(dataset, group, group_val, val_name, val1, val2) {
-  
-  if (!is.na(group) && !is.na(group_val)) {
-    mean_pred <- (subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val1)$predicted -
-                    subset(dataset, dataset[[group]] == group_val & dataset[[val_name]] %in% val2)$predicted) * 100 
-    
-    } else {
-    mean_pred <- (subset(dataset, dataset[[val_name]] %in% val1)$predicted -
-                    subset(dataset, dataset[[val_name]] %in% val2)$predicted) * 100 
-    
-  }
-  
-  return(mean_pred)
-}
-
-
-
 
 # PREPARE THE DATASETS =========================================================
 
 # Load the fitness data
 waal_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_1965-2020.csv", header = TRUE)
-ind_rs <- read.csv("Data_inputs/WAAL_breedingSuccess_2010-2020.csv")
-
-temp <- read.csv("Data_inputs/WAAL_foraging_2010-2020_F.csv") 
-temp <- rbind(temp, read.csv("Data_inputs/WAAL_foraging_2010-2020_M.csv"))
-
-temp <- temp %>% select(c("id", "sex", "Year", "Age", 
-                             "boldness", "attempted_breeding", "breeding_success",
-                             "prevyear")) %>%
-                          rename(year = Year) %>%
-                          filter(!is.na(breeding_success)) %>%
-                          distinct()
-
-write.csv(temp, "Data_inputs/WAAL_breedingSuccess_2010-2020.csv", row.names = F)
 
 ## Remove individuals reproducing before 7 (probably erroneous) or those with no age info
 waal_rs %<>% 
@@ -120,8 +69,9 @@ waal_rs %<>%
 waal_rs$year <- as.factor(waal_rs$year)
 waal_rs$prevyear <- factor(waal_rs$prevyear, levels = c("no attempt", "failedrep", "successfulrep"))
 
-ind_rs$year <- as.factor(ind_rs$year)
-ind_rs$prevyear <- factor(ind_rs$prevyear, levels = c("no attempt", "failedrep", "successfulrep"))
+## Remove problematic years - 1982, 1983, 1984
+## NB. Protocol was not established at this point and these values seem to be unusually high
+waal_rs %<>% filter(!year %in% c(1982, 1983, 1984))
 
 
 ## Process the climate data ----------------------------------------------------
@@ -173,11 +123,6 @@ waal_rs <- climate_breeding %>%
   right_join(waal_rs) %>% 
   data.frame()
 
-ind_rs <- climate_breeding %>% 
-  left_join(climate_prebreeding) %>% 
-  right_join(ind_rs) %>% 
-  data.frame()
-
 
 
 # VISUALISE THE DATA ===========================================================
@@ -189,7 +134,7 @@ ggplot(waal_rs %>%
          summarise(mean = mean(breeding_success)), 
        aes(x = as.factor(Age), y = mean)) + 
   geom_point() +
-  geom_smooth() # single threshold should be good and best fitted to the data
+  geom_smooth() 
 
 
 ### Distribution of ages
@@ -206,11 +151,6 @@ ggplot(waal_rs %>%
   geom_histogram(binwidth = 1) + 
   facet_wrap(~ Sex)
 
-### Breeding success ~ climate
-ggplot(waal_rs, 
-       aes(x = avgIOD_breeding, y = breeding_success)) + 
-  geom_point() +
-  geom_smooth() 
 
 # FIT THE MODELS ===============================================================
 
@@ -240,7 +180,8 @@ female_rs %<>%
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
          avgIOD_prebreeding_s = scale(avgIOD_prebreeding),
-         year = as.numeric(year))
+         year = as.numeric(year)) %>%
+  filter(!is.na(breeding_success))
 
 male_rs %<>%
   mutate(age_s = scale(Age),
@@ -252,7 +193,8 @@ male_rs %<>%
          avgSOI_prebreeding_s = scale(avgSOI_prebreeding),
          avgIOD_breeding_s = scale(avgIOD_breeding),
          avgIOD_prebreeding_s = scale(avgIOD_prebreeding),
-         year = as.numeric(year))
+         year = as.numeric(year)) %>%
+  filter(!is.na(breeding_success))
 
 
 
@@ -291,18 +233,6 @@ female_rs$residuals <- resid(f_SAM_glmm)
 f_SAM_pred <- data.frame(ggpredict(f_SAM_glmm, terms = c("age_s [all]")))
 f_SAM_pred$age <- (f_SAM_pred$x*sd(female_rs$Age)) + mean(female_rs$Age)
 
-# Build the plot
-p_f_age <- ggplot(f_SAM_pred, aes(x = age, y = predicted)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = female_fill) +
-  geom_line(size = 1.1, col = female_col) +
-  labs(x = "Age, years", y = "P|Successful", title = "Females") + 
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.15, 0.15),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        legend.key = element_blank())
-
 
 
 #### MALES ---------------------------------------------------------------------
@@ -329,18 +259,6 @@ tab_model(m_SAM_glmm, show.stat = T)
 # Get the plot data
 m_SAM_pred <- data.frame(ggpredict(m_SAM_glmm, terms = c("age_s [all]")))
 m_SAM_pred$age <- (m_SAM_pred$x*sd(male_rs$Age)) + mean(male_rs$Age)
-
-## Build the plot
-p_m_age <- ggplot(m_SAM_pred, aes(x = age, y = predicted)) + 
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5, fill = male_fill) +
-  geom_line(size = 1.1, col = male_col) +
-  labs(x = "Age, years", y = "P|Successful", title = "Males") + 
-  ylim(c(0,1)) +
-  theme_bw() +
-  theme(legend.position = c(0.15, 0.15),
-        legend.background = element_blank(),
-        legend.box.background = element_blank(),
-        legend.key = element_blank())
 
 
 
@@ -388,16 +306,10 @@ summary(m_SOI_glmm)
 tab_model(m_SOI_glmm, show.stat = T)
 
 
-# FIGURE SX: can do an age effect plot here if useful ==========================
 
-ggpubr::ggarrange(p_f_SAM, p_m_SAM,
-                  p_f_SOI, p_m_SOI,
-                  ncol = 2, nrow = 2,
-                  widths = c(1, 0.92))
+# VISUALISE RESULTS ============================================================
 
-
-
-# Visualise population-level breeding success with climate ---------------------
+### Summarise population-level breeding success with climate -------------------
 
 # Calculate mean RS per year
 annual_rs <- waal_rs %>%
@@ -414,11 +326,14 @@ annual_means <- waal_rs %>%
 
 annual_means$weights <- annual_means$n_inds/sum(annual_means$n_inds)
 xm <- weighted.mean(annual_means$annual_rs, annual_means$weights)
-#[1] 0.7809899
+#[1] 0.7796432
 
 weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
 sqrt(weighted_var)
+# [1] 0.03933454
 
+
+### Make the plots -------------------------------------------------------------
 
 # SAM : 
 RS_sam_breeding.plot <- ggplot() + 
@@ -433,7 +348,7 @@ RS_sam_breeding.plot <- ggplot() +
   scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Annular Mode (January to April)",
        y = "Population-level mean breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none")
 
@@ -449,7 +364,7 @@ RS_sam_prebreeding.plot <- ggplot() +
   scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Annular Mode (September to November)",
        y = "Population-level mean breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none",
         axis.text.y = element_blank(),
@@ -470,7 +385,7 @@ RS_soi_breeding.plot <- ggplot() +
   scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Oscillation Index (January to April)",
        y = "Population-level breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none")
 
@@ -488,7 +403,7 @@ RS_soi_prebreeding.plot <- ggplot() +
   scale_fill_gradient(high = "#148A41", low = "#ebf0ed") +
   labs(x = "Arithmetic mean Southern Oscillation Index (September to November)",
        y = "Population-level breeding success") +
-  scale_y_continuous(limit = c(0.65, 1), breaks = seq(0.7, 1, by = 0.1)) +
+  scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none",
         axis.text.y = element_blank(),
@@ -503,9 +418,4 @@ ggpubr::ggarrange(RS_sam_breeding.plot, RS_sam_prebreeding.plot,
                   ncol = 2, nrow = 2,
                   widths = c(1, 0.92))
 dev.off()
-
-
-
-
-
 
