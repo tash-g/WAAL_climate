@@ -29,7 +29,7 @@ UDs <- c(50, 75, 90)
 
 # Load the data ----------------------------------------------------------------
 
-gps_waal <- read.csv("Data_original/WAAL_GPS_1990-2020.csv")
+gps_waal <- read.csv("Data_inputs/WAAL_gpsLocations_1989-2020.csv")
 gps_waal <- subset(gps_waal, !is.na(DateTime))
 gps_waal$DateTime <- as.POSIXct(gps_waal$DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
 
@@ -125,20 +125,6 @@ plot(st_geometry(apf_sf), axes = T)
 
 ## Change the CRS
 apf_sf2 <- sf::st_transform(apf_sf, crs = proj.laea)
-plot(st_geometry(apf_sf2), axes = T)
-
-
-ggplot() +
-  geom_sf(data = apf_sf2, col = "#CF00BE", linewidth = 1, linetype = "dashed") +
-  geom_sf(data = world2, fill = "cadetblue", colour = "grey") +
-  coord_sf(crs = proj.laea, xlim = c(-3500000, 2500000), ylim = c(-3500000, 2500000),
-           label_axes = list(top = "E", left = "N", bottom = "E", right = "N")) +
-  geom_path(aes(x = Longitude, y = Latitude, group = Ring), 
-            alpha = 0.35, size = 0.25, col = "black",
-            dat = subset(gps_waal.df, Sex == "F")) 
-
-
-
 
 
 # Create the plots -------------------------------------------------------------
@@ -149,8 +135,10 @@ annual_F <- subset(kdareas_annual, id == "F")
 
 annual_kernelPlot_F <-
   # Set up the base map
-  ggplot(data = world2) + 
-  geom_sf(fill = "cadetblue", colour = "grey") +
+  ggplot() + 
+  geom_sf(data = world2, fill = "cadetblue", colour = "grey") +
+  # Add the polar front
+  geom_sf(data = apf_sf2, col = "#CF00BE", linewidth = 1, linetype = "dashed") +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.25, style = "bar") +
   coord_sf(crs = proj.laea, xlim = c(-3500000, 2500000), ylim = c(-3500000, 2500000),
             label_axes = list(top = "E", left = "N", bottom = "E", right = "N")) +
@@ -197,8 +185,10 @@ annual_M <- subset(kdareas_annual, id == "M")
 
 annual_kernelPlot_M <-
   # Set up the base map
-  ggplot(data = world2) + 
-  geom_sf(fill = "cadetblue", colour = "grey") +
+  ggplot() + 
+  geom_sf(data = world2, fill = "cadetblue", colour = "grey") +
+  # Add the polar front
+  geom_sf(data = apf_sf2, col = "#CF00BE", linewidth = 1, linetype = "dashed") +
   ggspatial::annotation_scale(location = "bl", width_hint = 0.25, style = "bar") +
   coord_sf(crs = proj.laea, xlim = c(-3500000, 2500000), ylim = c(-3500000, 2500000),
            label_axes = list(top = "E", left = "N", bottom = "E", right = "N")) +
