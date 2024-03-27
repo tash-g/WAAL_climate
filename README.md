@@ -1,7 +1,7 @@
-# Flexible behaviour buffers climate variability in the wandering albatross _Diomedea exulans_
+# Plastic behaviour buffers climate variability in the wandering albatross _Diomedea exulans_
 Natasha Gillies, Jack Thorley, Henri Weimerskirch, Stéphanie Jenouvrier, Samantha C. Patrick
 ## Overview
-This repository contains scripts and data to recreate the main results and figures of this paper (currently in prep).
+This repository contains scripts and data to recreate the main results and figures of this paper (currently in submission).
 
 ## Scripts
 A short description of each script is given below.
