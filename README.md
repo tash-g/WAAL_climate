@@ -1,5 +1,6 @@
 # Plastic behaviour buffers climate variability in the wandering albatross _Diomedea exulans_
-Natasha Gillies, Jack Thorley, Henri Weimerskirch, Stéphanie Jenouvrier, Samantha C. Patrick
+Natasha Gillies, Jack Thorley, Henri Weimerskirch, Stéphanie Jenouvrier, Christoph Barbraud, Karine Delord, Samantha C. Patrick
+
 ## Overview
 This repository contains scripts and data to recreate the main results and figures of this paper (currently in submission).
 
@@ -9,7 +10,8 @@ A short description of each script is given below.
 - **MS_RS_by_climate.R** Contains analyses to examine the effect of climate variation on reproductive success. 
 - **MS_foraging_by_climate_indices.R** Contains analyses to examine the effect of climate variation on foraging behaviour.
 - **MS_kernel_map.R** Calculates distribution kernels and plots them. Note this code depends on sp packages, which are not supported by recent R distributions.
-- **MS_plot_climate_indices.R** Plots changes in climate indices over time. 
+- **MS_plot_climate_indices.R** Plots changes in climate indices over time.
+- **SI_distances_latitudes_by_climate_indices.R** Contains analyses from Supplementary Materials.
 
  
 ## Data inputs 
@@ -23,6 +25,10 @@ These datasets are used in the above scripts. Note that individual IDs have been
   - _counter_: Numeric counter for dataset
   - _cat_: Factor indicating whether the value is negative (neg) or positive (pos)
   - _moving_avg_: Numeric moving average for index, rolling window = 6
+
+- **SI_WAAL_foraging_2010-2020_additionalMetrics.csv** Dataset used in analyses within supplementary materials. Identical to foraging datasets below but with two additional variables:
+  - _med_travel_dist_: Numeric variable; indicates median distance travelled between searching bouts, in km, within a foraging trip
+  - _min_lat_: Numeric variable; indicates maximum latitude reached during a foraging trtip
     
 - **WAAL_breedingSuccess_1965-2020.csv** Dataset used in reproductive success analyses. Each record represents an individual breeding attempt and outcomes for that year. Data columns are as follows:
   - _id_: Factor encoding unique ID of bird; anonymised from original 
