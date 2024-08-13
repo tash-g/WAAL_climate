@@ -179,8 +179,8 @@ dev.off()
 
 # MODEL FITTING ================================================================
 
-load("Data_outputs/foraging_data_climate_analyses_M.RData")
-load("Data_outputs/foraging_data_climate_analyses_F.RData")
+femalegps <- read.csv("Data_inputs/WAAL_foraging_2010-2020_F.csv")
+malegps <- read.csv("Data_inputs/WAAL_foraging_2010-2020_M.csv")
 
 ## Process the data -------------------------------------------------------------
 
