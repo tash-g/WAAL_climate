@@ -24,7 +24,7 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 # Load data ---------------------------------------------------------------
 
-allgps <- read.csv("Data_inputs/SI_WAAL_foraging_2010-2020_additionalMetrics.csv")
+allgps <- read.csv("Data_inputs/WAAL_foraging_2010-2020.csv")
 
 # Split by sex
 allgps_F <- subset(allgps, sex == "Female")
