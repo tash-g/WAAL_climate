@@ -394,9 +394,9 @@ RS_soi_prebreeding.plot <- ggplot() +
         axis.title.x = element_text(size = 14))
 
 
-# FIGURE 6: breeding success ~ climate =========================================
+# FIGURE 5: breeding success ~ climate =========================================
 
-png("Figures/FIG6_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
+png("Figures/FIG5_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
 ggpubr::ggarrange(RS_sam_breeding.plot, RS_sam_prebreeding.plot,
                   RS_soi_breeding.plot, RS_soi_prebreeding.plot,
                   ncol = 2, nrow = 2,
