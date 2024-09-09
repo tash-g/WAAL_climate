@@ -46,7 +46,7 @@ allgps_F <- subset(allgps_F, round(tripduration.days) > 0 &
 # Isolate key variables
 female_mod <- allgps_F[,c("id", "Year", "Age", "DeploymentID", "sex", "boldness",
                           "SAMIndex", "SOIIndex", 
-                          "med_travel_dist", "min_lat",
+                          "med_travel_dist", "min_latitude", "med_latitude",
                           "totalpathdistance.km", "total_landings_hmm")]
 
 ## MALES ##
@@ -66,7 +66,7 @@ allgps_M$distPerDay <- allgps_M$totalpathdistance.km/allgps_M$tripduration.days
 # Isolate key variables
 male_mod <- allgps_M[,c("id", "Year", "Age", "DeploymentID", "sex", "boldness",
                         "SAMIndex", "SOIIndex", 
-                        "med_travel_dist", "min_lat",
+                        "med_travel_dist", "min_latitude", "med_latitude",
                         "totalpathdistance.km", "total_landings_hmm")]
 
 
@@ -110,123 +110,70 @@ dev.off()
 
 # Fit models using glmmTMB ----------------------------------------------------
 
-## Median distances ------------------------------------------------------------
-
-# SAM #
-# ~ F
-f_medDist.SAM <- glmmTMB(med_travel_dist ~ 
-                            SAMIndex * boldness + 
-                            (1|Year) + (1|id), 
-                          family = Gamma(link = log),
-                          data = female_mod)
-
-plot(simulateResiduals(f_medDist.SAM))
-summary(f_medDist.SAM)
-
-f_medDist.SAM <- update(f_medDist.SAM, ~ SAMIndex + boldness + (1|Year) + (1|id))
-summary(f_medDist.SAM)
-
-# ~ M
-m_medDist.SAM <- glmmTMB(med_travel_dist ~ 
-                           SAMIndex * boldness + 
-                           (1|Year) + (1|id), 
-                         family = Gamma(link = log),
-                         data = male_mod)
-
-plot(simulateResiduals(m_medDist.SAM))
-summary(m_medDist.SAM)
-
-m_medDist.SAM <- update(m_medDist.SAM, ~ SAMIndex + boldness + (1|Year) + (1|id))
-summary(m_medDist.SAM)
-
-
-# SOI #
-# ~ F
-f_medDist.SOI <- glmmTMB(med_travel_dist ~ 
-                           SOIIndex * boldness + 
-                           (1|Year) + (1|id), 
-                         family = Gamma(link = log),
-                         data = female_mod)
-
-plot(simulateResiduals(f_medDist.SOI))
-summary(f_medDist.SOI)
-
-f_medDist.SOI <- update(f_medDist.SOI, ~ SOIIndex + boldness + (1|Year) + (1|id))
-summary(f_medDist.SOI)
-
-# ~ M
-m_medDist.SOI <- glmmTMB(med_travel_dist ~ 
-                           SOIIndex * boldness + 
-                           (1|Year) + (1|id), 
-                         family = Gamma(link = log),
-                         data = male_mod)
-
-plot(simulateResiduals(m_medDist.SOI))
-summary(m_medDist.SOI)
-
-m_medDist.SOI <- update(m_medDist.SOI, ~ SOIIndex + boldness + (1|Year) + (1|id))
-summary(m_medDist.SOI)
-
-
 ## Latitude --------------------------------------------------------------------
 
 # Make latitude absolute for easier plotting
-female_mod$min_lat <- abs(female_mod$min_lat)
-male_mod$min_lat <- abs(male_mod$min_lat)
+female_mod$med_latitude <- abs(female_mod$med_latitude)
+male_mod$med_latitude <- abs(male_mod$med_latitude)
 
 # SAM #
 # ~ F
-f_minLat.SAM <- glmmTMB(min_lat ~ 
-                           SAMIndex * boldness + 
+f_medLatitude.SAM <- glmmTMB(med_latitude ~ 
+                           SAMIndex * boldness + Age +
                            (1|Year) + (1|id), 
                          family = gaussian(link = "log"),
                          data = female_mod)
 
-plot(simulateResiduals(f_minLat.SAM))
-summary(f_minLat.SAM)
+plot(simulateResiduals(f_medLatitude.SAM))
+summary(f_medLatitude.SAM)
 
-f_minLat.SAM <- update(f_minLat.SAM, ~ SAMIndex + boldness + (1|Year) + (1|id))
-summary(f_minLat.SAM)
+f_medLatitude.SAM <- update(f_medLatitude.SAM, ~ SAMIndex + boldness + Age + (1|Year) + (1|id))
+summary(f_medLatitude.SAM)
+
+tab_model(f_medLatitude.SAM)
 
 # ~ M
-m_minLat.SAM <- glmmTMB(min_lat ~ 
-                           SAMIndex * boldness + 
-                           (1|Year) + (1|id), 
+m_medLatitude.SAM <- glmmTMB(med_latitude ~ 
+                           SAMIndex * boldness + Age +
+                           (1|id), 
                          family = gaussian(link = log),
                          data = male_mod)
 
-plot(simulateResiduals(m_minLat.SAM))
-summary(m_minLat.SAM)
+plot(simulateResiduals(m_medLatitude.SAM))
+summary(m_medLatitude.SAM)
 
-m_minLat.SAM <- update(m_minLat.SAM, ~ SAMIndex + boldness + (1|Year) + (1|id))
-summary(m_minLat.SAM)
-
+m_medLatitude.SAM <- update(m_medLatitude.SAM, ~ SAMIndex + boldness + Age +(1|Year) + (1|id))
+summary(m_medLatitude.SAM)
+tab_model(m_medLatitude.SAM, show.stat = T)
 
 # SOI #
 # ~ F
-f_minLat.SOI <- glmmTMB(min_lat ~ 
-                           SOIIndex * boldness + 
+f_medLatitude.SOI <- glmmTMB(med_latitude ~ 
+                           SOIIndex * boldness + Age +
                            (1|Year) + (1|id), 
                          family = Gamma(link = log),
                          data = female_mod)
 
-plot(simulateResiduals(f_minLat.SOI))
-summary(f_minLat.SOI)
+plot(simulateResiduals(f_medLatitude.SOI))
+summary(f_medLatitude.SOI)
+
+f_medLatitude.SOI <- update(f_medLatitude.SOI, ~ SOIIndex + boldness + Age + (1|Year) + (1|id))
+summary(f_medLatitude.SOI, show.stat = T)
+tab_model(f_medLatitude.SOI, show.stat = T)
 
 # ~ M
-m_minLat.SOI <- glmmTMB(min_lat ~ 
-                           SOIIndex * boldness + 
+m_medLatitude.SOI <- glmmTMB(med_latitude ~ 
+                           SOIIndex * boldness + Age +
                            (1|Year) + (1|id), 
                          family = Gamma(link = log),
                          data = male_mod)
 
-plot(simulateResiduals(m_minLat.SOI))
-summary(m_minLat.SOI)
+plot(simulateResiduals(m_medLatitude.SOI))
+summary(m_medLatitude.SOI)
 
-m_minLat.SOI <- update(m_minLat.SOI, ~ SOIIndex + boldness + (1|Year) + (1|id))
-summary(m_minLat.SOI)
-
-
+m_medLatitude.SOI <- update(m_medLatitude.SOI, ~ SOIIndex + boldness + Age + (1|Year) + (1|id))
+summary(m_medLatitude.SOI)
+tab_model(m_medLatitude.SOI, show.stat = T)
 
 # Plot models ------------------------------------------------------------------
 
@@ -252,83 +199,20 @@ quantile(malegps$boldness, c(0.1, 0.5, 0.9))
 # 10%       50%       90% 
 # -1.979724 -0.319167  1.340847 
 
-## Median distance between patches ---------------------------------------------
-
-## Females ##
-f_medDist_sam.df <- data.frame(ggpredict(f_medDist.SAM, terms = "SAMIndex")) %>% 
-  rename(SAM = x) 
-
-# Build the plot 
-f_medDist_sam.plot <- ggplot() +
-  geom_line(data = f_medDist_sam.df, aes(y = predicted, x = SAM), col = female_col, linewidth = 1) +
-  geom_ribbon(data = f_medDist_sam.df, aes(y = predicted, x = SAM,
-                                            ymin = conf.low, ymax = conf.high), 
-              alpha = 0.2, fill = female_fill) +
-  stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = 4), 
-                     point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Monthly Southern Annular Mode", y = "Median distance between patches (km)") +
-  scale_y_continuous(limits = c(0,80)) +
-  theme_bw() +
-  theme(plot.title = element_text(face = "bold"),
-        axis.text.x = element_text(size = 12),
-        axis.title.x = element_text(size = 14),
-        axis.title.y = element_text(size = 14),
-        plot.tag = element_text(size = 13)) 
-
-
-
-## Males ##
-m_medDist_sam.df <- data.frame(ggpredict(m_medDist.SAM, terms = "SAMIndex")) %>% 
-  rename(SAM = x) 
-
-# Build the plot 
-m_medDist_sam.plot <- ggplot() +
-  geom_line(data = m_medDist_sam.df, aes(y = predicted, x = SAM), col = male_col, linewidth = 1,
-            linetype = "dashed") +
-  geom_ribbon(data = m_medDist_sam.df, aes(y = predicted, x = SAM,
-                                           ymin = conf.low, ymax = conf.high), 
-              alpha = 0.2, fill = male_fill) +
-  stat_pointinterval(data = subset(sam_range, sex == "Males"), aes(x = SAMIndex, y = 4), 
-                     point_size = 3.5, colour = "darkgrey") +
-  labs(x = "Monthly Southern Annular Mode", y = "Total trip distance (km)") +
-  scale_y_continuous(limits = c(0,80)) + 
-  theme_bw() +
-  theme(axis.text.y = element_blank(),
-        axis.title.y = element_blank(),
-        plot.title = element_text(face = "bold"),
-        axis.text.x = element_text(size = 12),
-        axis.title.x = element_text(size = 14),
-        plot.tag = element_text(size = 13)) 
-
-
-ggarrange(f_medDist_sam.plot, m_medDist_sam.plot, ncol = 2)
-
-
-
-## Maximum latitude ------------------------------------------------------------
+## Median latitude ------------------------------------------------------------
 
 # Females #
-f_minLat_soi.df <- data.frame(ggpredict(f_minLat.SOI, terms = c("SOIIndex", "boldness[-1.275, 0.0278, 1.9]"))) %>% 
-  rename(SOI = x, boldness = group) %>%
-  mutate(boldness = as.numeric(boldness), boldness = case_when(boldness == min(boldness) ~ "Shy",
-                                                               boldness == max(boldness) ~ "Bold",
-                                                               TRUE ~ "Intermediate"))
-
-f_minLat_soi.df$boldness <- factor(f_minLat_soi.df$boldness, levels = c("Shy", "Intermediate", "Bold"))
+f_medLat_sam.df <- data.frame(ggpredict(f_medLatitude.SAM, terms = "SAMIndex")) %>% 
+  rename(SAM = x) 
 
 # Build the plot 
-f_minLat_soi.plot <- ggplot() +
-  geom_line(data = f_minLat_soi.df, aes(y = (predicted*-1), x = SOI, col = boldness), linewidth = 1) +
-  geom_ribbon(data = f_minLat_soi.df, aes(y = (predicted*-1), x = SOI,
-                                          ymin = conf.low*-1, ymax = conf.high*-1, 
-                                          fill = boldness), alpha = 0.2) +
-  stat_pointinterval(data = subset(soi_range, sex == "Females"), aes(x = SOIIndex, y = -50), 
+f_medLat_sam.plot <- ggplot() +
+  geom_line(data = f_medLat_sam.df, aes(y = (predicted*-1), x = SAM), linewidth = 1) +
+  geom_ribbon(data = f_medLat_sam.df, aes(y = (predicted*-1), x = SAM,
+                                          ymin = conf.low*-1, ymax = conf.high*-1), alpha = 0.2) +
+  stat_pointinterval(data = subset(sam_range, sex == "Females"), aes(x = SAMIndex, y = -50), 
                      point_size = 3.5, colour = "darkgrey") +
   labs(x = "Monthly Southern Oscillation Index", y = "Minimum latitude") +
-  scale_colour_manual(values = c("#FFE48F", "#D9A601", "#584300"), labels = c("Shy", "Intermediate", "Bold"),
-                      name = "Boldness") +
-  scale_fill_manual(values = c("#FFE48F", "#FFC20A", "#A37C01"), labels = c("Shy", "Intermediate", "Bold"),
-                    name = "Boldness") +
   theme_bw() +
   theme(legend.position = c(0.9, 0.9),
         legend.background = element_blank(),
