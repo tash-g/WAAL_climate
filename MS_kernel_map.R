@@ -233,8 +233,7 @@ annual_kernelPlot_M <-
 png("Figures/FIG1_male_female_UD_legacy.png", 
     width = 12, height = 6, units = "in", res = 300)
 ggpubr::ggarrange(annual_kernelPlot_F, annual_kernelPlot_M,
-                  ncol = 2, nrow = 1,
-                  widths = c(1, 0.92))
+                  ncol = 2, nrow = 1)
 dev.off()
 
 
