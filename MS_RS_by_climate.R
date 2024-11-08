@@ -123,35 +123,6 @@ waal_rs <- climate_breeding %>%
   right_join(waal_rs) %>% 
   data.frame()
 
-
-
-# VISUALISE THE DATA ===========================================================
-
-### Breeding success ~ Age
-ggplot(waal_rs %>% 
-         filter(!is.na(breeding_success)) %>% 
-         group_by(Age) %>% 
-         summarise(mean = mean(breeding_success)), 
-       aes(x = as.factor(Age), y = mean)) + 
-  geom_point() +
-  geom_smooth() 
-
-
-### Distribution of ages
-ggplot(waal_rs %>% 
-         filter(!is.na(breeding_success)), aes(x = Age)) + 
-  geom_histogram(binwidth = 1) + 
-  facet_wrap(~ Sex)
-
-
-### Distribution of AFR
-ggplot(waal_rs %>% 
-         group_by(id) %>% 
-         slice(1), aes(x = AFR)) + 
-  geom_histogram(binwidth = 1) + 
-  facet_wrap(~ Sex)
-
-
 # FIT THE MODELS ===============================================================
 
 # Individual level effects of climate on reproductive success ------------------
@@ -323,7 +294,7 @@ xm <- weighted.mean(annual_means$annual_rs, annual_means$weights)
 #[1] 0.7796432
 
 weighted_var <- sum(annual_means$weights * (annual_means$annual_rs - xm)^2)
-sqrt(weighted_var)
+sqrt(weighted_var)*100
 # [1] 0.03933454
 
 
@@ -339,11 +310,9 @@ RS_sam_breeding.plot <- ggplot() +
   scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   scale_size_continuous(name = "n birds") +
   theme_bw() + 
-  theme(legend.position = c(0.85, 0.15),
-        legend.box = "horizontal",
-        legend.background = element_blank(),
-        axis.text.y = element_text(size = 12),
-        axis.title.y = element_text(size = 14),
+  theme(legend.position = "none",
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
         axis.text.x = element_text(size = 12),
         axis.title.x = element_text(size = 14))
 
@@ -356,9 +325,11 @@ RS_sam_prebreeding.plot <- ggplot() +
        y = "Population-level mean breeding success") +
   scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
-  theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank(),
+  theme(legend.position = c(0.85, 0.15),
+        legend.box = "horizontal",
+        legend.background = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title.y = element_text(size = 14),
         axis.text.x = element_text(size = 12),
         axis.title.x = element_text(size = 14))
 
@@ -373,8 +344,8 @@ RS_soi_breeding.plot <- ggplot() +
   scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none",
-        axis.text.y = element_text(size = 12),
-        axis.title.y = element_text(size = 14),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
         axis.text.x = element_text(size = 12),
         axis.title.x = element_text(size = 14))
 
@@ -388,8 +359,8 @@ RS_soi_prebreeding.plot <- ggplot() +
   scale_y_continuous(limit = c(0.65, 0.85), breaks = seq(0.7, 1, by = 0.1)) +
   theme_bw() + 
   theme(legend.position = "none",
-        axis.text.y = element_blank(),
-        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title.y = element_text(size = 14),
         axis.text.x = element_text(size = 12),
         axis.title.x = element_text(size = 14))
 
@@ -397,8 +368,8 @@ RS_soi_prebreeding.plot <- ggplot() +
 # FIGURE 5: breeding success ~ climate =========================================
 
 png("Figures/FIG5_RS_by_climate.png", width = 12, height = 12, units = "in", res = 300)
-ggpubr::ggarrange(RS_sam_breeding.plot, RS_sam_prebreeding.plot,
-                  RS_soi_breeding.plot, RS_soi_prebreeding.plot,
+ggpubr::ggarrange(RS_sam_prebreeding.plot, RS_sam_breeding.plot,
+                  RS_soi_prebreeding.plot, RS_soi_breeding.plot,
                   ncol = 2, nrow = 2,
                   widths = c(1, 0.92))
 dev.off()
