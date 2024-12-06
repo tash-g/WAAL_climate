@@ -4,7 +4,7 @@ Natasha Gillies, Jack Thorley, Henri Weimerskirch, Stéphanie Jenouvrier, Christ
 ## Overview
 This repository contains scripts and data to recreate the main results and figures of the following manuscript:
 
-Plastic behaviour buffers climate variability in the wandering albatross _Diomedea exulans_. (2024) Gillies N., Thorley J., Weimerskirch H., Jenouvrier S., Barbraud C., Delord K., Patrick SC. Ecology and Evolution. DOI: https://doi.org/10.1002/ece3.70631
+Plastic behaviour buffers climate variability in the wandering albatross _Diomedea exulans_. (2024) Gillies N., Thorley J., Weimerskirch H., Jenouvrier S., Barbraud C., Delord K., Patrick SC. Ecology and Evolution, 14(12): e70631. DOI: https://doi.org/10.1002/ece3.70631
 
 ## Scripts
 A short description of each script is given below.
